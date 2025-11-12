@@ -7,8 +7,6 @@ To run the app on an Android mobile device or emulator, run the following comman
 
   cd app-ui
   npm install
-  npm install -g expo-cli
-  npx expo install expo-dev-client
   eas build --profile development --platform android
 
 For mobile devices, scan the QR code. Otherwise, when asked to install and run the Android build on an emulator, enter yes. Select Pixel 5 and Android Studio should launch. Run the following command:
