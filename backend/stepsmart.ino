@@ -4,8 +4,11 @@
 BLEService statisticsService("1385f9ca-f88f-4ebe-982f-0828bffb54ee");
 BLEStringCharacteristic accelChar("1385f9cb-f88f-4ebe-982f-0828bffb54ee", BLERead | BLENotify, 30);
 BLEStringCharacteristic pressureChar("1385f9cc-f88f-4ebe-982f-0828bffb54ee", BLERead | BLENotify, 30);
+BLEStringCharacteristic gyroChar("1385f9cd-f88f-4ebe-982f-0828bffb54ee", BLERead | BLENotify, 30);
 
-#define FORCE_SENSOR_PIN A0
+#define FORCE_SENSOR_PIN_1 A0
+#define FORCE_SENSOR_PIN_2 A1
+#define FORCE_SENSOR_PIN_3 A2
 
 void setup() {
 
@@ -29,10 +32,12 @@ void setup() {
 
   statisticsService.addCharacteristic(accelChar);
   statisticsService.addCharacteristic(pressureChar);
+  statisticsService.addCharacteristic(gyroChar);
   BLE.addService(statisticsService);
 
   accelChar.writeValue("Waiting for data...");
   pressureChar.writeValue("Waiting for pressure data...");
+  gyroChar.writeValue("Waiting for gyroscope data...");
 
   BLE.advertise();
   Serial.println("BLE device active, waiting for connections...");
@@ -46,33 +51,36 @@ void loop() {
     Serial.println(central.address());
 
     while (central.connected()) {
-      float x, y, z;
+      float accelX, accelY, accelZ, gyroX, gyroY, gyroZ;
 
       
       if (IMU.accelerationAvailable()) {
-        IMU.readAcceleration(x, y, z);
+        IMU.readAcceleration(accelX, accelY, accelZ);
 
         
-        String data = "X: " + String(x, 3) + ", Y: " + String(y, 3) + ", Z: " + String(z, 3);
+        String accelData = String(accelX, 3) + "," + String(accelY, 3) + "," + String(accelZ, 3);
 
-        accelChar.writeValue(data);
+        accelChar.writeValue(accelData);
         
       }
 
-      int analogReading = analogRead(FORCE_SENSOR_PIN);
+      int firstSensor = analogRead(FORCE_SENSOR_PIN_1);
+      int secondSensor = analogRead(FORCE_SENSOR_PIN_2);
+      int thirdSensor = analogRead(FORCE_SENSOR_PIN_3);
 
-      String dataString = "";
+      String forceData = String(firstSensor) + "," + String(secondSensor) + "," + String(thirdSensor);
 
-      if (analogReading < 20)       
-        dataString = "No Pressure";
-      else if (analogReading < 400) 
-        dataString = "Light Pressure";
-      else if (analogReading < 600) 
-        dataString = "Medium Pressure";
-      else if (analogReading < 800) 
-        dataString = "A Lot of Pressure";
+      pressureChar.writeValue(forceData);
 
-      pressureChar.writeValue(dataString);
+      if (IMU.gyroscopeAvailable()) {
+
+        IMU.readGyroscope(gyroX, gyroY, gyroZ);
+
+        String gyroData = String(gyroX, 3) + "," + String(gyroY, 3) + "," + String(gyroZ, 3);
+
+        gyroChar.writeValue(gyroData);
+
+      }
 
       delay(100);
     }
