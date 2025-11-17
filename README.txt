@@ -45,4 +45,3 @@ Pre-Alpha build outlined work:
 Bugs:
 - funky numbers from gyroscope values, will need to add a calibration detail to the code
 - lack of proper packet validation in current build
-]
