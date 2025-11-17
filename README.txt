@@ -5,9 +5,9 @@ The system is built with an Arduino Nano 33 BLE Sense and a React Native Expo mo
 It captures active acceleration, gyroscope, and plantar pressure data and transmits data streams via Bluetooth Low Energy (BLE) for visualization on mobile devices.
 
 Hardware 
-- Arduino Nano 33 BLE Sense
+- Arduino Nano 33 BLE Rev2
 - Force sensors
-- Rechargeable Lithium 5V battery
+- Rechargeable Lithium 4.5V battery
 - Connectors
 
 Software 
