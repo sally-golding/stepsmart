@@ -1,16 +1,21 @@
-import { Text, View, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import BLEButton from "./ble";
 
 export default function Index() {
   return (
     <View style={styles.container}>
+      <View style={styles.buttonBox}>
+        <BLEButton />
+      </View>
+      <View style={{ height: 10 }} />
       <View style={styles.strideGaitBox}>
         <Text style={styles.placeholderText}>Stride / Gait Analysis</Text>
       </View>
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <View style={styles.heatmapBox}>
         <Text style={styles.placeholderText}>Heatmap</Text>
       </View>
-      <View style={{ height: 20 }} />
+      <View style={{ height: 10 }} />
       <View style={styles.insightsBox}>
         <Text style={styles.placeholderText}>Insights</Text>
       </View>
@@ -65,6 +70,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#444",
+  },
+  buttonBox: {
+    width: "45%",
+    height: 45,
+    // backgroundColor: "#e6e6e6",
+    backgroundColor: "#1c1c1e",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#1c1c1e",
   },
   placeholderText: {
     color: "#ffffffc4",
