@@ -37,7 +37,10 @@ export async function requestBlePermissions() {
 export default function BLEButton() {
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
-    const CHARACTERISTIC_UUID = "1385f9cc-f88f-4ebe-982f-0828bffb54ee";
+
+    const ACCEL_UUID = "1385f9cb-f88f-4ebe-982f-0828bffb54ee";
+    const PRESSURE_UUID = "1385f9cc-f88f-4ebe-982f-0828bffb54ee";
+    const GYRO_UUID = "1385f9cd-f88f-4ebe-982f-0828bffb54ee";
 
     const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
     const [pressure, setPressure] = useState<number | null>(null);
@@ -131,6 +134,8 @@ export default function BLEButton() {
         });
     };
 
+    const decode = (base64: string) => atob(base64);
+
     const connectToDevice = async (device: Device) => {
         console.log("Connecting to:", device.name, device.id);
         try {
@@ -140,23 +145,69 @@ export default function BLEButton() {
             setIsConnecting(false);
             console.log("Connected!");
 
+            // accelerometer
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
-                CHARACTERISTIC_UUID,
+                ACCEL_UUID,
                 (error, characteristic) => {
                     if (error) {
-                        console.error("Monitor error:", error);
+                        console.error("Accelerometer monitor error:", error);
                         return;
                     }
-                    
+
                     if (characteristic?.value) {
-                        const raw = atob(characteristic.value);
-                        const value = parseFloat(raw);
-                        console.log("Pressure:", value);
-                        setPressure(value);
+                        const raw = decode(characteristic.value);
+                        console.log("Accel:", raw);
+                    }
+                    
+                    // old pressure sensor code
+                    // if (characteristic?.value) {
+                    //     const raw = atob(characteristic.value);
+                    //     const value = parseFloat(raw);
+                    //     console.log("Pressure:", value);
+                    //     setPressure(value);
+                    // }
+                }
+            );
+
+            // pressure sensors
+            connected.monitorCharacteristicForService(
+                SERVICE_UUID,
+                PRESSURE_UUID,
+                (error, characteristic) => {
+                    if (error) {
+                        console.error("Pressure monitor error:", error);
+                        return;
+                    }
+                    if (characteristic?.value) {
+                        const raw = decode(characteristic.value);
+                        console.log("Pressure sensors:", raw);
+
+                        const parts = raw.split(",");
+                        const first = parseFloat(parts[0]);
+
+                        // only show first sensor on UI
+                        setPressure(first);
                     }
                 }
             );
+
+            // gyroscope
+            connected.monitorCharacteristicForService(
+                SERVICE_UUID,
+                GYRO_UUID,
+                (error, characteristic) => {
+                    if (error) {
+                        console.error("Gyro monitor error:", error);
+                        return;
+                    }
+                    if (characteristic?.value) {
+                        const raw = decode(characteristic.value);
+                        console.log("Gyro:", raw);
+                    }
+                }
+            );
+
         } catch (e: any) {
             console.error("Connection failed:", e.message);
             setError("Connection failed: " + e.message);
