@@ -1,13 +1,13 @@
 stepsmart
 
 StepSmart is a wearable smart insole designed to improve the safety and performance of runners. 
-The system is built with an Arduino Nano 33 BLE Sense and a React Native Expo mobile application. 
+The system is built with an Arduino Nano 33 BLE Rev 2 and a React Native Expo mobile application. 
 It captures active acceleration, gyroscope, and plantar pressure data and transmits data streams via Bluetooth Low Energy (BLE) for visualization on mobile devices.
 
 Hardware 
-- Arduino Nano 33 BLE Sense
+- Arduino Nano 33 BLE Rev2
 - Force sensors
-- Rechargeable Lithium 5V battery
+- Rechargeable Lithium 4.5V battery
 - Connectors
 
 Software 
@@ -20,7 +20,7 @@ Software
 
 Usage Guide
 - insert StepSmart insole into running shoe
-- ensure Arduino Nano 33 BLE Sense and battery components are securely connected
+- ensure Arduino Nano 33 BLE Rev 2 and battery components are securely connected
 - open StepSmart mobile application
 - begin walking or running to steam data metrics
 
@@ -44,3 +44,4 @@ Pre-Alpha build outlined work:
 
 Bugs:
 - funky numbers from gyroscope values, will need to add a calibration detail to the code
+- lack of proper packet validation in current build
