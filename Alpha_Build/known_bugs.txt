@@ -1,0 +1,11 @@
+StepSmart Mobile Application Known Bugs / Limitations
+
+1. Foot heatmap visualization is not fully complete; pressure-to-color mapping needs refinement and radial gradient between sensor regions is not yet implemented; visualization does not represent an anatomically accurate foot layout.
+2. Heatmap layout relies on fixed dimensions and may not scale correctly on different screen sizes.
+3. Application assumes valid BLE data is received; partial, delayed, or inaccurate data is not handled.
+4. Pressure data is limited to three sensor points.
+5. Pressure averages are calculated after disconnecting from device, preventing real-time updates.
+6. Accelerometer and gyroscope averaging buffers are not cleared between sessions.
+7. Stride and gait analysis features are not yet implemented; only raw accelerometer and gyroscope data is displayed currently.
+8. Mobile application is supported on Android devices only.
+9. Automatic reconnection is not supported if BLE connection is lost or interrupted.
