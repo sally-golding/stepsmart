@@ -1,0 +1,25 @@
+System Requirements
+
+Compatible Android device with the required application installed
+
+-------------------------------------------------------------------------
+
+Step-by-Step Instructions
+
+1. Install and Set Up the Software
+Download and install the companion application on a supported Android device. Complete the initial setup as prompted within the app.
+
+2. Insert the Insole and Attach the Device
+Place the sensor insole inside your shoe. Secure the device firmly using the provided strap to ensure proper alignment and data accuracy.
+
+3. Power On the Device
+Turn on the device using the power switch. Verify that the device is powered on before proceeding.
+
+4. Start Recording
+When you are ready to begin your run, press the Record button in the application.
+
+5. Stop Recording After the Run
+Once your run is complete, stop the recording through the app to save the session data.
+
+6. Review Your Performance Data
+Open the recorded session in the app to explore performance metrics, including heat maps, stride length, foot strike patterns, and other insights.
