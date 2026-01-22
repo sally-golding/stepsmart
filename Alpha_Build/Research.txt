@@ -116,6 +116,7 @@ References:
 
 Chang, P., Wang, C., Chen, Y., Wang, G., & Lu, A. (2023). Identification of runner fatigue stages based on inertial sensors and deep learning. Frontiers in bioengineering and biotechnology, 11, 1302911. https://doi.org/10.3389/fbioe.2023.1302911
 
+
 6. Other Metrics in Prior Insoles
 
 Common Spatiotemporal Metrics Include:
