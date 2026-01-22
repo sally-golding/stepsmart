@@ -83,19 +83,54 @@ S. A. Alves, R. M. Ehrig, P. C. Raffalt, A. Bender, G. N. Duda, and A. N. Agres,
 R. Daniluk, A. Hadamus, M. Ludwicki, and B. Zagrodny, “Backward vs. Forward Gait Symmetry Analysis Based on Plantar Pressure Mapping,” Symmetry, vol. 14, no. 2, p. 203, Jan. 2022, doi: 10.3390/sym14020203
 
 
-4. Other Metrics in Prior Insoles
+4. Initial Contact Force Analysis
 
-Common metrics:
+By using the pressure sensors, the application should determine which area of the foot makes initial contact when landing. The application should display this information as a simple average to let the user know which part of the foot they consistently land with first. This information is helpful to let a user ensure that they are striking with the desired part of the foot, as heelstriking is considered less natural and comfortable than forefoot striking.
 
-- center of pressure
+Additionally, this force data can be coupled with IMU data to provide real-time gait feedback. If the system detects that the user is striking the ground with too much or too little force, the application should display simple actionable feedback phrases, such as “run softer” or “run lighter.”
 
-- plantar forces
+How to Replicate this in the App:
 
-- pressure distribution 
+Since the pressure sensors are positioned in a way that divides the foot into a forefoot, midfoot, and rearfoot position, data can be sampled to determine which part of the sole gets an appropriate pressure reading first. However, a minimum force threshold is needed to be surpassed for a strike of contact to be registered.
 
-- step count
+During a period of running, multiple points of contact should be recorded with their associated pressure forces. If these forces exceed an anticipated value for the user, actionable feedback should be displayed to correct the user’s technique.
 
-- stride length
+References:
+
+Hata, K., Yamazaki, Y., Ishikawa, M., & Yanagiya, T. (2025). Foot Strike Pattern Detection Using a Loadsol® Sensor Insole. Sensors, 25(14), 4417. https://doi.org/10.3390/s25144417
+
+https://www.gsportspt.com/blog/1212997-how-wearable-technology-can-help-runners
+
+
+5. Fatigue Tracking
+
+By analyzing a user's gait patterns over a session of running (with IMU and accelerometer data), it is possible to detect signs of fatigue in the user. However, a complex algorithm that can detect outliers in gait patterns would have to be developed. On the other hand, machine learning models can also be used to detect these outliers that indicate fatigue, but these models would be quite difficult to train and create.
+
+Instead of relying on a complex algorithm or machine learning, it may be possible to use the tracked spatiotemporal parameters, such as stride length, and check for notable outliers in a session of running. If these parameters start to suddenly show a different trend toward the later part of a running session, this could suggest that the runner is experiencing fatigue.
+
+How to Replicate this in the App:
+
+In order to implement this method of fatigue tracking, the other spatiotemporal parameters would have to be tracked over a session of running. This is talked about more in Section 6 of this document.
+
+References:
+
+Chang, P., Wang, C., Chen, Y., Wang, G., & Lu, A. (2023). Identification of runner fatigue stages based on inertial sensors and deep learning. Frontiers in bioengineering and biotechnology, 11, 1302911. https://doi.org/10.3389/fbioe.2023.1302911
+
+6. Other Metrics in Prior Insoles
+
+Common Spatiotemporal Metrics Include:
+
+- Center of pressure
+
+- Plantar forces
+
+- Pressure distribution 
+
+- Step count
+
+- Stride length
+
+Based on research, it is evident that these spatiotemporal metrics are important to runners. These metrics provide confirmation whether appropriate technique is being used in respect to the user's velocity. Research also shows how these spatiotemporal metrics should scale as runners become better at their craft, with elite runners showing different trends in recorded metrics from novice runners.
 
 References:
 
@@ -103,12 +138,13 @@ H. Espinosa, A. Mears, A. Stamm, Y. Ohgi, and C. Coniglio, “Wearable sensor te
 
 S. V. M. Santos, B. B. Gomes, M. A. Neto, and A. M. Amaro, “A Systematic Review of Insole Sensor Technology: Recent Studies and Future Directions,” Appl. Sci., vol. 14, no. 14, p. 6085, Jul. 2024, doi: 10.3390/app14146085
 
+García-Pinillos, F., García-Ramos, A., Ramírez-Campillo, R., Latorre-Román, P. Á., & Roche-Seruendo, L. E. (2019). How Do Spatiotemporal Parameters and Lower-Body Stiffness Change with Increased Running Velocity? A Comparison Between Novice and Elite Level Runners. Journal of human kinetics, 70, 25–38. https://doi.org/10.2478/hukin-2019-0036
 
-5. Update Ideas
+7. Implementation Ideas
 
 Add metric‑specific processing:
 
-- integrate VO calculation, COP computation, and symmetry calculations
+- integrate VO calculation, COP computation, symmetry calculations, stride length, and so on. However, as a team we need to decide which metrics we should prioritize and work on refining the computations needed to appropriately implement these metrics
 
 Integrate metric interpretation: 
 
