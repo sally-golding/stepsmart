@@ -1,1 +1,120 @@
+1. Vertical Oscillation Metric
+
+Vertical Oscillation:
+
+- previous wearable devices have used metrics such as vertical oscillation (VO)
+
+- VO is the up‑and‑down movement of a runner’s trunk/center of mass
+
+- a higher VO is shown to lead to higher oxygen/energetic cost
+
+- a lower VO can indicate better running capability
+
+- a typical VO is between 5cm and 10cm
+
+- the difference between maximum and minimum position of the marker in the vertical axis is calculated for each stride to derive vertical oscillation
+
+
+Formula:
+
+- VO = ∫(t0 to t1) [ ∫(t0 to t) (az(τ) - g) dτ ] dt
+
+- g = 9.81, (gravity)
+
+- az(t) is accelerometer Z multiplied by g
+
+
+References:
+
+B. S. Ramaswamy, “Optimizing Vertical Oscillation for Better Stride,” Geeks on Feet, Aug. 20, 2021. https://geeksonfeet.com/run/optimizing-vertical-oscillation
+
+B. Van Hooren, I. Jukic, M. Cox, K. G. Frenken, I. Bautista, and I. S. Moore, “The Relationship Between Running Biomechanics and Running Economy: A Systematic Review and Meta‑Analysis of Observational Studies,” Sports Medicine, vol. 54, pp. 1269–1316, Mar. 2024, doi: 10.1007/s40279-024-01997-3
+
+C. P. Smith, E. Fullerton, L. Walton, E. Funnell, D. Pantazis, and H. Lugo, "The validity and reliability of wearable devices for the measurement of vertical oscillation for running," PLoS ONE, vol. 17, no. 11, p. e0277810, Nov. 2022, doi: 10.1371/journal.pone.0277810
+
+
+2. Foot Strike Metric
+
+Center of Pressure:
+
+- a center‑of‑pressure approach where the pressure sensors can be used to compute foot‑strike location (heel/mid/fore) has been used
+
+- a prior study tested whether a three‑sensor insole could accurately estimate center of pressure
+
+- the conclusion of the study indicated that three sensors give useful estimates for field use
+
+- limitations were reduced precision at the very start and end of stance
+
+Formula:
+
+- x_COP(t) = (sum_{i=1}^n p_i(t) * x_i) / (sum_{i=1}^n p_i(t))
+
+- x_COP(t) is center of pressure
+
+- n is the number of sensors
+
+
+References:
+
+R. A. Brindle, C. M. Bleakley, J. B. Taylor, R. M. Queen, and K. R. Ford, “Validity of estimating center of pressure during walking and running with plantar load from a three‑sensor wireless insole,” Wearable Technologies, vol. 3, p. e8, 2022, doi:10.1017/wtc.2022.5
+
+
+3. Symmetry Index Metric
+
+Symmetry Index:
+
+- percentage that shows how different one side of your step is from the other
+
+- it tells whether your left and right steps are balanced or if one side is doing more work
+
+- increases in asymmetry can foreshadow pain or injury
+
+Formula:
+
+- SI = 100  (L - R) / (0.5  (L + R))
+
+- L is the average value of the per‑stride on the left side
+
+- R is the average value of the per‑stride on the right side
+
+References:
+S. A. Alves, R. M. Ehrig, P. C. Raffalt, A. Bender, G. N. Duda, and A. N. Agres, “Quantifying Asymmetry in Gait: The Weighted Universal Symmetry Index to Evaluate 3D Ground Reaction Forces,” Front. Bioeng. Biotechnol., vol. 8, p. 579511, 23 Oct. 2020, doi: 10.3389/fbioe.2020.579511
+
+R. Daniluk, A. Hadamus, M. Ludwicki, and B. Zagrodny, “Backward vs. Forward Gait Symmetry Analysis Based on Plantar Pressure Mapping,” Symmetry, vol. 14, no. 2, p. 203, Jan. 2022, doi: 10.3390/sym14020203
+
+
+4. Other Metrics in Prior Insoles
+
+Common metrics:
+
+- center of pressure
+
+- plantar forces
+
+- pressure distribution 
+
+- step count
+
+- stride length
+
+References:
+
+H. Espinosa, A. Mears, A. Stamm, Y. Ohgi, and C. Coniglio, “Wearable sensor technology in sports monitoring,” Sports Eng., vol. 28, art. no. 4, Jan. 2025, doi: 10.1007/s12283-025-00485-9
+
+S. V. M. Santos, B. B. Gomes, M. A. Neto, and A. M. Amaro, “A Systematic Review of Insole Sensor Technology: Recent Studies and Future Directions,” Appl. Sci., vol. 14, no. 14, p. 6085, Jul. 2024, doi: 10.3390/app14146085
+
+
+5. Update Ideas
+
+Add metric‑specific processing:
+
+- integrate VO calculation, COP computation, and symmetry calculations
+
+Integrate metric interpretation: 
+
+- add simple explanations to tell users what their values mean, ex: high VO = less efficient
+
+- add simple charts or color indicators
+
+
 
