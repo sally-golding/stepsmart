@@ -1,7 +1,6 @@
 StepSmart Mobile Application Known Bugs / Limitations
 
-1. Foot heatmap visualization is not fully complete; pressure-to-color mapping needs refinement and radial gradient between sensor regions is not yet implemented; 
-  visualization does not represent an anatomically accurate foot layout.
+1. Foot heatmap visualization is not fully complete; visualization, pressure-to-color mapping, and gradient need refinement.
 2. Heatmap layout relies on fixed dimensions and may not scale correctly on different screen sizes.
 3. Application assumes valid BLE data is received; partial, delayed, or inaccurate data is not handled.
 4. Pressure data is limited to three sensor points.
