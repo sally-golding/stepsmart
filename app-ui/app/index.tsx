@@ -4,9 +4,11 @@ import React, { useState, useEffect } from "react";
 import Heatmap from "./heatmap";
 
 export default function Index() {
-  const [averages, setAverages] = useState<number[] | null>(null);
+  const [averages, setAverages] = useState<number[] | null>(null); // pressure
   const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null);
   const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [stepCount, setStepCount] = useState<number | null>(null);
+  const [cadence, setCadence] = useState<number | null>(null);
 
   // const getColor = (value: number) => {
   //   // Normalize 0-1
@@ -29,16 +31,31 @@ export default function Index() {
 
       <View style={styles.buttonBox}>
         <BLEButton 
-          setAverages={setAverages}
+          setPressureAverages={setAverages}
           setAccelAverages={setAccelAverages} 
-          setGyroAverages={setGyroAverages}     
+          setGyroAverages={setGyroAverages}    
+          setStepCount={setStepCount}
+          setCadence={setCadence}
         />
       </View>
 
       <View style={{ height: 10 }} />
+
       <View style={styles.strideGaitBox}>
-        {/* <Text style={styles.placeholderText}>Stride / Gait Analysis (Coming Soon!)</Text> */}
-        {accelAverages && gyroAverages ? (
+        {stepCount !== null && cadence !== null ? (
+          <>
+            <Text style={styles.analysisText}>
+              Step Count: {stepCount}
+            </Text>
+            <Text style={styles.analysisText}>
+              Cadence: {Math.round(cadence)} steps/min
+            </Text>
+          </>
+        ) : (
+           <Text style={styles.placeholderText}>Stride / Gait Analysis (Waiting for data)</Text>
+        )}
+
+        {/* {accelAverages && gyroAverages ? (
           <>
             <Text style={styles.analysisText}>
               Accelerometer: x = {accelAverages.x.toFixed(2)}, y = {accelAverages.y.toFixed(2)}, z = {accelAverages.z.toFixed(2)}
@@ -48,15 +65,12 @@ export default function Index() {
             </Text>
           </>
         ) : (
-          <Text style={styles.placeholderText}>Stride / Gait Analysis (Waiting for data)</Text>
-        )}
+          <Text style={styles.placeholderText}>Stride / Gait Analysis (Waiting for accel/gyro data)</Text>
+        )} */}
+
       </View>
 
       <View style={{ height: 10 }} />
-
-      {/* <View style={styles.heatmapBox}>
-        <Text style={styles.placeholderText}>Heatmap</Text>
-      </View> */}
 
       <View style={styles.heatmapBox}>
         {averages && averages.length === 3 ? (
@@ -65,56 +79,6 @@ export default function Index() {
           <Text style={styles.placeholderText}>Heatmap</Text>
         )}
       </View>
-
-
-       {/* <View style={styles.heatmapBox}>
-        {averages && averages.length === 3 ? (
-          <View style={{ width: "80%", height: 275, alignItems: "center" }}>
-            <View // top toe
-              style={{
-                //flex: 1,
-                backgroundColor: getColor(averages[0]),
-                borderRadius: 90, // oval shape
-                marginTop: 10,
-                width: "60%",
-                height: 80,
-                transform: [{ scaleY: 0.75 }],
-                alignSelf: "center",
-              }}
-            />
-
-            <View // midle arch
-              style={{
-                //flex: 1,
-                backgroundColor: getColor(averages[1]),
-                borderRadius: 15,
-                marginVertical: 5,
-                width: "20%",
-                height: 70,
-                alignSelf: "flex-end",
-                marginRight: 73,
-                //marginTop: 10,
-              }}
-            />
-
-            <View
-              style={{ // bottom heel
-                //flex: 1,
-                backgroundColor: getColor(averages[2]),
-                borderRadius: 50,
-                marginBottom: 10,
-                width: 80,
-                aspectRatio: 1,
-                //alignSelf: "center",
-                alignSelf: "flex-end",
-                marginRight: 95,
-              }}
-            />
-          </View>
-        ) : (
-          <Text style={styles.placeholderText}>Heatmap</Text>
-        )}
-      </View> */}
 
       <View style={{ height: 10 }} />
       <View style={styles.insightsBox}>

@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
-// import RNFS from "react-native-fs"
 import * as FileSystem from "expo-file-system/legacy";
-// import * as Sharing from "expo-sharing";
+import { StepDetector } from "./analysis"
 
 interface BLEButtonProps {
-  setAverages?: React.Dispatch<React.SetStateAction<number[] | null>>;
+  setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>;
   setAccelAverages: (values: { x: number; y: number; z: number }) => void;
   setGyroAverages: (values: { x: number; y: number; z: number }) => void;
+  setStepCount: (steps: number) => void;
+  setCadence: (cadence: number) => void;
 }
 
 const accelValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
@@ -24,7 +25,7 @@ async function resetFile(path: string) {
     try {
         await FileSystem.writeAsStringAsync(path, "", { encoding: "utf8" });
     } catch (e) {
-        console.log("FILE RESET ERROR:", e);
+        console.log("File Reset Error:", e);
     }
 }
 
@@ -39,10 +40,9 @@ async function appendFile(path: string, text: string) {
     await FileSystem.writeAsStringAsync(path, current + text, { encoding: "utf8" });
 
     } catch (e) {
-        console.log("FILE WRITE ERROR:", e);
+        console.log("File Write Error:", e);
     }
 }
-
 
 export async function requestBlePermissions() {
   if (Platform.OS === "android") {
@@ -74,7 +74,7 @@ export async function requestBlePermissions() {
   return true;
 }
 
-export default function BLEButton({ setAverages, setAccelAverages, setGyroAverages }: BLEButtonProps) {
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence }: BLEButtonProps) {
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
 
@@ -87,7 +87,11 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
     const [isScanning, setIsScanning] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState<string>("");
-
+    
+    // step metrics (accel)
+    // const [stepCount, setStepCount] = useState(0);
+    // const [cadence, setCadence] = useState(0);
+    const stepDetector = StepDetector();
     //const [averages, setAverages] = useState<number[] | null>(null);
 
     const stopScanning = () => {
@@ -103,6 +107,7 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
                 await connectedDevice.cancelConnection();
                 setConnectedDevice(null);
                 setPressure(null);
+                stepDetector.reset();
                 console.log("Disconnected");
                 computePressureAverages();
             } catch (e: any) {
@@ -218,6 +223,14 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
                         accelValues.x.push(x);
                         accelValues.y.push(y);
                         accelValues.z.push(z);
+                        //console.log("Accel: ", z);
+
+                        // STEP DETECTION //
+                        const result = stepDetector.update(z, Date.now());
+                        setStepCount(result.stepCount);
+                        setCadence(result.cadence);
+
+                        // //
 
                         const avgX = accelValues.x.reduce((a, b) => a + b, 0) / accelValues.x.length;
                         const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
@@ -318,7 +331,7 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
             let count = 0;
 
             lines.forEach(line => {
-                // Split by comma and trim each part to handle " 1023"
+                // split and handle
                 const vals = line.split(",").map(v => parseFloat(v.trim()));
                 if (vals.length >= 3 && !vals.some(isNaN)) {
                     sums[0] += vals[0];
@@ -331,7 +344,7 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
             if (count > 0) {
                 const avg = sums.map(s => s / count);
                 console.log("Calculated Averages:", avg);
-                if (setAverages) setAverages(avg);
+                if (setPressureAverages) setPressureAverages(avg);
             }
         } catch (e) {
             console.log("Error computing averages:", e);
