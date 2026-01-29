@@ -10,3 +10,4 @@ StepSmart Mobile Application Known Bugs / Limitations
 8. Mobile application is supported on Android devices only.
 9. Automatic reconnection is not supported if BLE connection is lost or interrupted.
 10. Step count and cadence are not calibrated for running.
+11. Step count is incorrect for the first step, it counts when the insole is lifted.
