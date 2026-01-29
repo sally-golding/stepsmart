@@ -1,0 +1,16 @@
+StepSmart Recommended Test Cases
+--------------------------------
+
+1. Confirm reliable BLE data transmission from Arduino to Android app for a full usage session
+
+2. Confirm that all three pressure sensors transmit valid data
+
+3. Evaluate how the system behaves when BLE connection is lost during a usage ession (Error Message)
+
+4. Measure stability of sensor readings over time
+
+5. Verify that pressure data maps correctly to the heatmap visualization
+
+6. Check how the system behaves if the insole is used incorrectly (should display inconsistent results)
+
+7. Verify that the mobile application correctly receives and processes live sensor data from the Arduino
