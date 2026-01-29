@@ -6,6 +6,7 @@ StepSmart Mobile Application Known Bugs / Limitations
 4. Pressure data is limited to three sensor points.
 5. Pressure averages are calculated after disconnecting from device, preventing real-time updates.
 6. Accelerometer and gyroscope averaging buffers are not cleared between sessions.
-7. Stride and gait analysis features are not yet implemented; only raw accelerometer and gyroscope data is displayed currently.
+7. Stride and gait analysis features are not yet fully implemented.
 8. Mobile application is supported on Android devices only.
 9. Automatic reconnection is not supported if BLE connection is lost or interrupted.
+10. Step count and cadence are not calibrated for running.
