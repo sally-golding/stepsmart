@@ -1,0 +1,80 @@
+import React from "react";
+import Svg, { Defs, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg";
+
+type HeatmapProps = {
+  averages: number[]; // [toe, arch, heel]
+};
+
+const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
+  if (!averages || averages.length !== 3) return null;
+
+  const getColor = (value: number) => {
+    // if raw value is 0 (max pressure), intensity becomes 1 (high/red).
+    // if raw value is 1023 (no pressure), intensity becomes 0 (low/yellow).
+    const rawIntensity = Math.min(Math.max(value / 1023, 0), 1);
+    const intensity = 1 - rawIntensity; 
+
+    // hue 0 = red (High Pressure)
+    // hue 60 = yellow (Low Pressure)
+    const hue = (1 - intensity) * 60; 
+    return `hsl(${hue}, 100%, 50%)`;
+  };
+
+  const toeColor = getColor(averages[0]);
+  const archColor = getColor(averages[1]);
+  const heelColor = getColor(averages[2]);
+
+  const footPaths = [
+    "M154.13 274.39c-79.17-8.33-65.87-131.13-2.09-164.58 42.26-22.161 99.31-21.193 137.5-6.25 72.44 28.35 91.669 64.58 102.09 135.42 10.413 70.83-24.49 258.2-108.34 279.16-75 18.75-103.94-17.6-95.83-52.08 8.33-35.42 49.41-81.29 52.08-112.5 6.25-72.92-85.41-79.17-85.41-79.17",
+    "M13.06 101.5c21.21 30.8 61.45 39.9 89.88 20.33 28.43-19.58 34.29-60.414 13.08-91.214S54.58-9.282 26.14 10.293C-2.28 29.868-8.14 70.705 13.06 101.5",
+    "M176.55 82.105c18.15 3.09 35.28-8.655 38.28-26.236 2.99-17.581-8.59-44.006-26.74-47.096-18.15-3.092-35.29 8.655-38.28 26.236-3 17.581 8.59 44.005 26.74 47.096",
+    "M235.4 69.41c10.28 14.576 25.34 17.381 40.38 6.774 15.05-10.607 18.59-40.858 8.31-55.435-10.28-14.575-25.33-17.38-40.38-6.773s-18.59 40.858-8.31 55.434",
+    "M298.25 80.36c3.16 15.209 18.957 24.79 35.293 21.4 16.336-3.392 29.616-26.456 26.459-41.665s-18.958-24.79-35.293-21.399C308.37 42.087 295.09 65.151 298.25 80.36",
+    "M364.611 102.14c-9.291 13.86-7.525 31.32 3.943 39.01s28.296 2.69 37.587-11.17c9.29-13.86 7.524-31.323-3.944-39.011s-28.296-2.688-37.586 11.171"
+  ];
+
+  return (
+    <Svg 
+        width="100%" 
+        height="100%" 
+        viewBox="0 0 412 523" 
+        preserveAspectRatio="xMidYMid meet"
+    >
+      <Defs>
+        {/* Blended vertical gradient */}
+        <LinearGradient id="heatGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+          <Stop offset="10%" stopColor={heelColor} />
+          <Stop offset="50%" stopColor={archColor} />
+          <Stop offset="90%" stopColor={toeColor} />
+        </LinearGradient>
+
+        <Mask id="footMask">
+          <G fill="white">
+            {footPaths.map((d, i) => (
+              <Path key={`mask-${i}`} d={d} />
+            ))}
+          </G>
+        </Mask>
+      </Defs>
+
+      <Rect // heatmap rect clipped by mask
+        x="0"
+        y="0"
+        width="412"
+        height="523"
+        fill="url(#heatGradient)"
+        mask="url(#footMask)"
+      />
+
+      <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}>
+        {footPaths.map((d, i) => (
+          <Path key={`outline-${i}`} d={d} />
+        ))}
+      </G>
+    </Svg>
+  );
+};
+
+export default Heatmap;
+
+

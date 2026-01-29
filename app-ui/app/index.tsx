@@ -1,27 +1,28 @@
 import { StyleSheet, Text, View } from "react-native";
 import BLEButton from "./ble";
 import React, { useState, useEffect } from "react";
+import Heatmap from "./heatmap";
 
 export default function Index() {
   const [averages, setAverages] = useState<number[] | null>(null);
   const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null);
   const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null);
 
-  const getColor = (value: number) => {
-    // Normalize 0-1
-    let intensity = Math.min(Math.max(value / 1023, 0), 1);
+  // const getColor = (value: number) => {
+  //   // Normalize 0-1
+  //   let intensity = Math.min(Math.max(value / 1023, 0), 1);
 
-    // Dramatic nonlinear mapping (log-like)
-    intensity = Math.pow(intensity, 3.2); // exponent >1: low values stay dark/red, high values jump to yellow
+  //   // Dramatic nonlinear mapping (log-like)
+  //   intensity = Math.pow(intensity, 3); // exponent >1: low values stay dark/red, high values jump to yellow
 
-    // Map intensity to hue: red (0°) → yellow (60°)
-    const hue = intensity * 60;
+  //   // Map intensity to hue: red (0°) → yellow (60°)
+  //   const hue = intensity * 60;
 
-    // Optional: tweak lightness for more dramatic effect
-    const lightness = 30 + intensity * 40; // 30% → 70%
+  //   // Optional: tweak lightness for more dramatic effect
+  //   const lightness = 30 + intensity * 40; // 30% → 70%
 
-    return `hsl(${hue}, 100%, ${lightness}%)`;
-  };
+  //   return `hsl(${hue}, 100%, ${lightness}%)`;
+  // };
 
   return (
     <View style={styles.container}>
@@ -52,15 +53,24 @@ export default function Index() {
       </View>
 
       <View style={{ height: 10 }} />
+
       {/* <View style={styles.heatmapBox}>
         <Text style={styles.placeholderText}>Heatmap</Text>
       </View> */}
 
-       <View style={styles.heatmapBox}>
+      <View style={styles.heatmapBox}>
+        {averages && averages.length === 3 ? (
+          <Heatmap averages={averages} />
+        ) : (
+          <Text style={styles.placeholderText}>Heatmap</Text>
+        )}
+      </View>
+
+
+       {/* <View style={styles.heatmapBox}>
         {averages && averages.length === 3 ? (
           <View style={{ width: "80%", height: 275, alignItems: "center" }}>
-            {/* Top Box: Toe / Ball (Oval) */}
-            <View
+            <View // top toe
               style={{
                 //flex: 1,
                 backgroundColor: getColor(averages[0]),
@@ -73,8 +83,7 @@ export default function Index() {
               }}
             />
 
-            {/* Middle Box: Rounded rectangle, narrower, right-aligned */}
-            <View
+            <View // midle arch
               style={{
                 //flex: 1,
                 backgroundColor: getColor(averages[1]),
@@ -88,9 +97,8 @@ export default function Index() {
               }}
             />
 
-            {/* Bottom Box: Heel (Circle) */}
             <View
-              style={{
+              style={{ // bottom heel
                 //flex: 1,
                 backgroundColor: getColor(averages[2]),
                 borderRadius: 50,
@@ -106,7 +114,7 @@ export default function Index() {
         ) : (
           <Text style={styles.placeholderText}>Heatmap</Text>
         )}
-      </View>
+      </View> */}
 
       <View style={{ height: 10 }} />
       <View style={styles.insightsBox}>
@@ -159,6 +167,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#444",
+    overflow: "hidden",
   },
   insightsBox: {
     width: "90%",

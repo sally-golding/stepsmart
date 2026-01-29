@@ -249,15 +249,23 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
                     }
                     if (characteristic?.value) {
                         const raw = decode(characteristic.value);
+                        const parts = raw.split(",").map(p => p.trim());
                         console.log("Pressure sensors:", raw);
 
-                        const parts = raw.split(",");
+                        //const parts = raw.split(",");
                         const first = parseFloat(parts[0]);
                         const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
 
+                        if (parts.length >= 3) {
+                            const formatted = `${parts[0]},${parts[1]},${parts[2]}`;
+                
+                            setPressure(parseFloat(parts[0])); 
+                            appendFile(pressure_file, formatted + "\n");
+                        }
+
                         // only show first sensor on UI
-                        setPressure(first);
-                        appendFile(pressure_file, formatted + "\n");
+                        // setPressure(first);
+                        // appendFile(pressure_file, formatted + "\n");
                     }
                 }
             );
@@ -306,14 +314,25 @@ export default function BLEButton({ setAverages, setAccelAverages, setGyroAverag
             const lines = content.trim().split("\n");
             if (lines.length === 0) return;
 
-            const sums = [0, 0, 0];
+            let sums = [0, 0, 0];
+            let count = 0;
+
             lines.forEach(line => {
-                const vals = line.split(",").map(v => parseFloat(v));
-                vals.forEach((v, i) => sums[i] += v);
+                // Split by comma and trim each part to handle " 1023"
+                const vals = line.split(",").map(v => parseFloat(v.trim()));
+                if (vals.length >= 3 && !vals.some(isNaN)) {
+                    sums[0] += vals[0];
+                    sums[1] += vals[1];
+                    sums[2] += vals[2];
+                    count++;
+                }
             });
-            const avg = sums.map(s => s / lines.length);
-            console.log("Pressure averages:", avg);
-            if (setAverages) setAverages(avg);
+
+            if (count > 0) {
+                const avg = sums.map(s => s / count);
+                console.log("Calculated Averages:", avg);
+                if (setAverages) setAverages(avg);
+            }
         } catch (e) {
             console.log("Error computing averages:", e);
         }
