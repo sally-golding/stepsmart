@@ -1,4 +1,4 @@
-StepSmart Mobile Application Known Bugs / Limitations
+StepSmart Mobile Application Known Bugs & Limitations
 
 1. Foot heatmap visualization is not fully complete; visualization, pressure-to-color mapping, and gradient need refinement.
 2. Heatmap layout relies on fixed dimensions and may not scale correctly on different screen sizes.
@@ -10,4 +10,7 @@ StepSmart Mobile Application Known Bugs / Limitations
 8. Mobile application is supported on Android devices only.
 9. Automatic reconnection is not supported if BLE connection is lost or interrupted.
 10. Step count and cadence are not calibrated for running.
-11. Step count is incorrect for the first step, it counts when the insole is lifted.
+11. Step count is incorrect for the first step; it increments when the insole is lifted.
+12. Stride length and speed features require additional testing to ensure functionality.
+13. Analog input pins A1 and A2 are not functional; different pins need to be used and tested.
+14. Application is not a standalone mobile app; the development server must be started from a terminal before connecting a mobile device.
