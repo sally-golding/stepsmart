@@ -1,0 +1,7 @@
+{
+  "name": "stepsmart",
+  "private": true,
+  "scripts": {
+    "app": "cd app-ui && npm install && npx expo start"
+  }
+}
