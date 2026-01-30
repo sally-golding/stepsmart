@@ -13,6 +13,10 @@ export default function Index() {
   const [strideLength, setStrideLength] = useState<number | null>(null);
   const [speed, setSpeed] = useState<number | null>(null);
 
+  const handleNewSession = () => {
+    setAverages(null); // only render heatmap post session, do not maintain previous heatmap during a new session
+  };
+
   return (
     <View style={styles.container}>
 
@@ -25,6 +29,7 @@ export default function Index() {
           setCadence={setCadence} 
           setStrideLength={setStrideLength}
           setSpeed={setSpeed}
+          onConnect={handleNewSession}
         />
       </View>
 
@@ -47,7 +52,7 @@ export default function Index() {
             </Text>
           </>
         ) : (
-           <Text style={styles.placeholderText}>Stride & Gait Analysis (Waiting for data)</Text>
+           <Text style={styles.placeholderText}>Stride & Gait Analysis</Text>
         )}
 
         {/* {accelAverages && gyroAverages ? (
@@ -76,10 +81,34 @@ export default function Index() {
       </View>
 
       <View style={{ height: 10 }} />
-      <View style={styles.insightsBox}>
-        <Text style={styles.placeholderText}>Insights (Coming Soon!)</Text>
-      </View>
 
+      <View style={styles.insightsBox}>
+        {averages && averages.length === 3 ? (
+          (() => {
+            const [toe, arch, heel] = averages;
+            // most pressure (inverted)
+            let mostPressureRegion = "unknown";
+            const maxPressure = Math.min(toe, arch, heel);
+            if (maxPressure === toe) mostPressureRegion = "toe";
+            if (maxPressure === arch) mostPressureRegion = "arch";
+            if (maxPressure === heel) mostPressureRegion = "heel";
+
+            // strike type
+            let strikeType = "unknown";
+            if (heel < toe) strikeType = "heel strike";
+            else if (toe < heel) strikeType = "toe strike";
+            else strikeType = "flat/midfoot strike";
+
+            // insights
+            const insights = `Most pressure detected is on the ${mostPressureRegion}\n` +
+                       `Estimated strike type: ${strikeType}`;
+            
+            return <Text style={styles.analysisText}>{insights}</Text>;
+          })()
+      ) : (
+        <Text style={styles.placeholderText}>Insights</Text>
+      )}
+      </View>
     </View>
   );
 }

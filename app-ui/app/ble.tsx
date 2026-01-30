@@ -12,6 +12,7 @@ interface BLEButtonProps {
   setCadence: (cadence: number) => void;
   setStrideLength: (stride : number) => void;
   setSpeed: (speed: number) => void;
+  onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
 }
 
 const accelValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
@@ -50,6 +51,16 @@ async function appendFile(path: string, text: string) {
     }
 }
 
+// used to determine strike type
+type PressureSample = {
+    t: number;
+    toe: number;
+    arch: number;
+    heel: number;
+};
+
+let pressureBuffer: PressureSample[] = [];
+
 // ble permissions: scan, connect, location (android)
 export async function requestBlePermissions() {
   if (Platform.OS === "android") {
@@ -81,7 +92,7 @@ export async function requestBlePermissions() {
   return true;
 }
 
-export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed }: BLEButtonProps) {
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, onConnect, }: BLEButtonProps) {
     // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
@@ -224,6 +235,11 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             resetFile(pressure_file);
             resetFile(gyro_file);
 
+            // new session
+            if (onConnect) {
+                onConnect();
+            }
+
             // accelerometer monitoring
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
@@ -275,7 +291,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         // multiple pressure values per packet => split
                         const raw = decode(characteristic.value);
                         const parts = raw.split(",").map(p => p.trim());
-                        console.log("Pressure sensors:", raw);
+                        console.log("Pressure sensors:", raw); // *for debugging*
 
                         //const first = parseFloat(parts[0]);
                         //const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
@@ -350,7 +366,8 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
             if (count > 0) {
                 const avg = sums.map(s => s / count);
-                console.log("Calculated Averages:", avg);
+                const avgRounded = avg.map(a => Math.round(a));
+                console.log("Calculated Averages:", avgRounded);
                 if (setPressureAverages) setPressureAverages(avg);
             }
         } catch (e) {

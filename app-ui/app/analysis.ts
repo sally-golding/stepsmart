@@ -26,7 +26,7 @@ export class StepDetector {
     // pass in user height, convert to meters for calculations
     constructor(feet: number, inches: number) {
         const heightInches = feet * 12 + inches;
-        this.height = heightInches + 0.0254;
+        this.height = heightInches * 0.0254;
     }
 
     // updates each time there is a new z value
@@ -77,8 +77,8 @@ export class StepDetector {
             strideFactor = 0.65;
         }
 
-        const stepLength = legLength * strideFactor;
-        const strideLength = stepLength * 2;
+        const stepLength = (cadence === 0) ? 0 : legLength * strideFactor;
+        const strideLength = (cadence === 0) ? 0 : stepLength * 2;
 
         // calculate speed
         const speed = stepLength * (cadence / 60) * 2.23694;

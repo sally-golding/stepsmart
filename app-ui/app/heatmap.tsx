@@ -41,8 +41,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
 
   return (
     <Svg 
-        width="100%" 
-        height="100%" 
+        width="95%" 
+        height="95%" 
         viewBox="0 0 412 523" 
         preserveAspectRatio="xMidYMid meet"
     >
