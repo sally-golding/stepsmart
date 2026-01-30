@@ -1,29 +1,35 @@
+// heatmap
 import React from "react";
-import Svg, { Defs, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg"; // use svg for image
 
 type HeatmapProps = {
-  averages: number[]; // [toe, arch, heel]
+  averages: number[]; // input [toe, arch, heel]
 };
 
+// functional component
 const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
   if (!averages || averages.length !== 3) return null;
 
+  // color mapping
   const getColor = (value: number) => {
-    // if raw value is 0 (max pressure), intensity becomes 1 (high/red).
-    // if raw value is 1023 (no pressure), intensity becomes 0 (low/yellow).
+    // pressure = 0 (max) => intensity = 1 (high/red).
+    // pressure = 1023 (none) => intensity = 0 (low/yellow).
     const rawIntensity = Math.min(Math.max(value / 1023, 0), 1);
-    const intensity = 1 - rawIntensity; 
+    const intensity = 1 - rawIntensity; // invert
 
-    // hue 0 = red (High Pressure)
-    // hue 60 = yellow (Low Pressure)
+    // intensity => hue
+    // hue 0 = red (high pressure)
+    // hue 60 = yellow (low pressure)
     const hue = (1 - intensity) * 60; 
     return `hsl(${hue}, 100%, 50%)`;
   };
 
+  // convert each region
   const toeColor = getColor(averages[0]);
   const archColor = getColor(averages[1]);
   const heelColor = getColor(averages[2]);
 
+  // svg path (mask heatmap, draw outline)
   const footPaths = [
     "M154.13 274.39c-79.17-8.33-65.87-131.13-2.09-164.58 42.26-22.161 99.31-21.193 137.5-6.25 72.44 28.35 91.669 64.58 102.09 135.42 10.413 70.83-24.49 258.2-108.34 279.16-75 18.75-103.94-17.6-95.83-52.08 8.33-35.42 49.41-81.29 52.08-112.5 6.25-72.92-85.41-79.17-85.41-79.17",
     "M13.06 101.5c21.21 30.8 61.45 39.9 89.88 20.33 28.43-19.58 34.29-60.414 13.08-91.214S54.58-9.282 26.14 10.293C-2.28 29.868-8.14 70.705 13.06 101.5",
@@ -41,13 +47,14 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         preserveAspectRatio="xMidYMid meet"
     >
       <Defs>
-        {/* Blended vertical gradient */}
+        {/* blended gradient (vertical) */}
         <LinearGradient id="heatGradient" x1="0%" y1="100%" x2="0%" y2="0%">
           <Stop offset="10%" stopColor={heelColor} />
           <Stop offset="50%" stopColor={archColor} />
           <Stop offset="90%" stopColor={toeColor} />
         </LinearGradient>
 
+        {/* mask (draw shape) */}
         <Mask id="footMask">
           <G fill="white">
             {footPaths.map((d, i) => (
@@ -57,7 +64,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         </Mask>
       </Defs>
 
-      <Rect // heatmap rect clipped by mask
+      <Rect // heatmap rect clipped by mask (restricted to foot outline)
         x="0"
         y="0"
         width="412"
@@ -66,7 +73,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         mask="url(#footMask)"
       />
 
-      <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}>
+      {/* outline overlay */}
+      <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}> 
         {footPaths.map((d, i) => (
           <Path key={`outline-${i}`} d={d} />
         ))}

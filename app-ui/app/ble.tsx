@@ -5,22 +5,27 @@ import * as FileSystem from "expo-file-system/legacy";
 import { StepDetector } from "./analysis"
 
 interface BLEButtonProps {
-  setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>;
+  setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>; // array  for iteration (heatmap)
   setAccelAverages: (values: { x: number; y: number; z: number }) => void;
   setGyroAverages: (values: { x: number; y: number; z: number }) => void;
   setStepCount: (steps: number) => void;
   setCadence: (cadence: number) => void;
+  setStrideLength: (stride : number) => void;
+  setSpeed: (speed: number) => void;
 }
 
 const accelValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
 const gyroValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
 
+// ble controller (scanning, connecting, monitoring characteristics)
 const manager = new BleManager();
 
+// file paths to store sensor data
 const pressure_file: string = (FileSystem as any).documentDirectory + "pressure_data.txt";
 const accel_file: string = (FileSystem as any).documentDirectory + "accel_data.txt";
 const gyro_file: string = (FileSystem as any).documentDirectory + "gyro_data.txt";
 
+// clear file with a new connection
 async function resetFile(path: string) {
     try {
         await FileSystem.writeAsStringAsync(path, "", { encoding: "utf8" });
@@ -29,6 +34,7 @@ async function resetFile(path: string) {
     }
 }
 
+// add new sensor data
 async function appendFile(path: string, text: string) {
     try {
         const fileInfo = await FileSystem.getInfoAsync(path);
@@ -37,13 +43,14 @@ async function appendFile(path: string, text: string) {
         current = await FileSystem.readAsStringAsync(path);
     }
 
-    await FileSystem.writeAsStringAsync(path, current + text, { encoding: "utf8" });
+    await FileSystem.writeAsStringAsync(path, current + text, { encoding: "utf8" }); // old + new data
 
     } catch (e) {
         console.log("File Write Error:", e);
     }
 }
 
+// ble permissions: scan, connect, location (android)
 export async function requestBlePermissions() {
   if (Platform.OS === "android") {
     const scan = await PermissionsAndroid.request(
@@ -68,13 +75,14 @@ export async function requestBlePermissions() {
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
     );
 
-    return scan === "granted" && connect === "granted";
+    return scan === "granted" && connect === "granted"; // approved
   }
 
   return true;
 }
 
-export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence }: BLEButtonProps) {
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed }: BLEButtonProps) {
+    // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
 
@@ -83,52 +91,24 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const GYRO_UUID = "1385f9cd-f88f-4ebe-982f-0828bffb54ee";
 
     const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
-    const [pressure, setPressure] = useState<number | null>(null);
+    //const [pressure, setPressure] = useState<number | null>(null); // used to display pressure *for testing only*
     const [isScanning, setIsScanning] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState<string>("");
     
-    // step metrics (accel)
-    // const [stepCount, setStepCount] = useState(0);
-    // const [cadence, setCadence] = useState(0);
-    const stepDetector = StepDetector();
-    //const [averages, setAverages] = useState<number[] | null>(null);
+    // step detector instance *resets if component re-renders*
+    // *hard-coded height for testing*
+    const heightFeet = 5;
+    const heightInches = 6
+    const stepDetector = new StepDetector(heightFeet, heightInches);
 
-    const stopScanning = () => {
-        console.log("Stopping scan");
-        manager.stopDeviceScan();
-        setIsScanning(false);
-    };
+    // scan and connect logic (handles button press => scan, stop scanning, disconnect)
 
-    const disconnect = async () => {
-        if (connectedDevice) {
-            console.log("Disconnecting from device");
-            try {
-                await connectedDevice.cancelConnection();
-                setConnectedDevice(null);
-                setPressure(null);
-                stepDetector.reset();
-                console.log("Disconnected");
-                computePressureAverages();
-            } catch (e: any) {
-                console.error("Disconnect error:", e.message);
-            }
-        }
-    };
-
-    const handleButtonPress = () => {
-        if (connectedDevice) {
-            disconnect();
-        } else if (isScanning) {
-            stopScanning();
-        } else {
-            scanDevices();
-        }
-    };
-
+    // scan for ble device
     const scanDevices = async () => {
         console.log("=== SCAN START ===");
 
+        // request permissions and check power state
         setError("");
         console.log("Requesting permissions");
         const granted = await requestBlePermissions();
@@ -140,11 +120,13 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         }
         
         console.log("Permissions granted: true");
+
         console.log("Checking BLE state");
         const state = await manager.state();
         console.log("BLE state:", state);
         
         if (state !== "PoweredOn") {
+            console.log("Bluetooth is OFF");
             setError("Bluetooth is OFF");
             return;
         }
@@ -152,6 +134,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         manager.stopDeviceScan();
         setIsScanning(true);
 
+        // timeout after 15 seconds if device is not found
         const timeout = setTimeout(() => {
             console.log("TIMEOUT - Device not found");
             manager.stopDeviceScan();
@@ -159,6 +142,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             setError("Device not found");
         }, 15000);
 
+        // start scan
         console.log("Starting scan for", DEVICE_NAME);
         manager.startDeviceScan(null, null, (error, device) => {
             if (error) {
@@ -170,8 +154,9 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 return;
             }
 
+            // connect to StepSmart device
             if (device && device.name === DEVICE_NAME) {
-                console.log("FOUND StepSmart_Nano:", device.id);
+                console.log("FOUND StepSmart Nano:", device.id);
                 clearTimeout(timeout);
                 manager.stopDeviceScan();
                 setIsScanning(false);
@@ -181,30 +166,65 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             }
         });
     };
+    
+    // stop scan for ble device
+    const stopScanning = () => {
+        console.log("Stopping scan");
+        manager.stopDeviceScan();
+        setIsScanning(false);
+    };
+
+    // disconnect from ble device
+    const disconnect = async () => {
+        if (connectedDevice) {
+            console.log("Disconnecting from device");
+            try {
+                await connectedDevice.cancelConnection();
+                setConnectedDevice(null);
+                //setPressure(null);
+                stepDetector.reset(); // clear step count and cadence for next connection
+                console.log("Disconnected");
+                computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
+            } catch (e: any) {
+                console.error("Disconnect error:", e.message);
+            }
+        }
+    };
+
+    // button behavior (disconnect if connected, stop scan if scanning, start scan otherwise)
+    const handleButtonPress = () => {
+        if (connectedDevice) {
+            disconnect();
+        } else if (isScanning) {
+            stopScanning();
+        } else {
+            scanDevices();
+        }
+    };
 
     const decode = (base64: string) => atob(base64);
 
+    // connect
     const connectToDevice = async (device: Device) => {
         console.log("Connecting to:", device.name, device.id);
         try {
+            // connect, discover services (required before subscribing)
             const connected = await device.connect();
+
             console.log("Connected! Discovering services...");
             await connected.discoverAllServicesAndCharacteristics();
-            // await connected.readCharacteristicForService(SERVICE_UUID, PRESSURE_UUID);
             console.log("Services discovered!");
+
             setConnectedDevice(connected);
             setIsConnecting(false);
             console.log("Connected!");
 
-            // console.log("Pressure file path:", pressure_file);
-            // console.log("Accel file path:", accel_file);
-            // console.log("Gyro file path:", gyro_file);
-
+            // clear files
             resetFile(accel_file)
             resetFile(pressure_file);
             resetFile(gyro_file);
 
-            // accelerometer
+            // accelerometer monitoring
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
                 ACCEL_UUID,
@@ -215,43 +235,34 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     }
 
                     if (characteristic?.value) {
-                        // const raw = decode(characteristic.value);
-                        // console.log("Accel:", raw);
+                        // decode ble data into numeric values
                         const raw = atob(characteristic.value);
                         const [x, y, z] = raw.split(",").map(Number);
 
+                        // store raw data
                         accelValues.x.push(x);
                         accelValues.y.push(y);
                         accelValues.z.push(z);
-                        //console.log("Accel: ", z);
 
-                        // STEP DETECTION //
+                        // step detection (z), update ui (real-time)
                         const result = stepDetector.update(z, Date.now());
                         setStepCount(result.stepCount);
                         setCadence(result.cadence);
+                        setStrideLength(result.strideLength);
+                        setSpeed(result.speed);
 
-                        // //
-
+                        // compute and set averages *double check*
                         const avgX = accelValues.x.reduce((a, b) => a + b, 0) / accelValues.x.length;
                         const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
                         const avgZ = accelValues.z.reduce((a, b) => a + b, 0) / accelValues.z.length;
-
                         setAccelAverages({ x: avgX, y: avgY, z: avgZ });
 
-                        appendFile(accel_file, raw + "\n");
+                        appendFile(accel_file, raw + "\n"); // store to file
                     }
-                    
-                    // old pressure sensor code
-                    // if (characteristic?.value) {
-                    //     const raw = atob(characteristic.value);
-                    //     const value = parseFloat(raw);
-                    //     console.log("Pressure:", value);
-                    //     setPressure(value);
-                    // }
                 }
             );
 
-            // pressure sensors
+            // pressure monitoring
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
                 PRESSURE_UUID,
@@ -261,29 +272,24 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         return;
                     }
                     if (characteristic?.value) {
+                        // multiple pressure values per packet => split
                         const raw = decode(characteristic.value);
                         const parts = raw.split(",").map(p => p.trim());
                         console.log("Pressure sensors:", raw);
 
-                        //const parts = raw.split(",");
-                        const first = parseFloat(parts[0]);
-                        const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
+                        //const first = parseFloat(parts[0]);
+                        //const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
 
-                        if (parts.length >= 3) {
+                        if (parts.length >= 3) { // ensure there are three pressure values
                             const formatted = `${parts[0]},${parts[1]},${parts[2]}`;
-                
-                            setPressure(parseFloat(parts[0])); 
-                            appendFile(pressure_file, formatted + "\n");
+                            // setPressure(parseFloat(parts[0])); // display first pressure sensor only *for testing*
+                            appendFile(pressure_file, formatted + "\n"); // store to file
                         }
-
-                        // only show first sensor on UI
-                        // setPressure(first);
-                        // appendFile(pressure_file, formatted + "\n");
                     }
                 }
             );
 
-            // gyroscope
+            // gyroscope monitoring
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
                 GYRO_UUID,
@@ -293,23 +299,22 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         return;
                     }
                     if (characteristic?.value) {
-                        // const raw = decode(characteristic.value);
-                        // console.log("Gyro:", raw);
-
+                        // decode ble data into numeric values
                         const raw = atob(characteristic.value);
                         const [x, y, z] = raw.split(",").map(Number);
 
+                        // store raw data
                         gyroValues.x.push(x);
                         gyroValues.y.push(y);
                         gyroValues.z.push(z);
 
+                        // compute and set averages *double check*
                         const avgX = gyroValues.x.reduce((a, b) => a + b, 0) / gyroValues.x.length;
                         const avgY = gyroValues.y.reduce((a, b) => a + b, 0) / gyroValues.y.length;
                         const avgZ = gyroValues.z.reduce((a, b) => a + b, 0) / gyroValues.z.length;
-
                         setGyroAverages({ x: avgX, y: avgY, z: avgZ });
 
-                        appendFile(gyro_file, raw + "\n");
+                        appendFile(gyro_file, raw + "\n"); // store to file
                     }
                 }
             );
@@ -321,8 +326,10 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         }
     };
 
+    // compute pressure averages after disconnect
     const computePressureAverages = async () => {
         try {
+            // read file, sum each sensor, compute mean
             const content = await FileSystem.readAsStringAsync(pressure_file);
             const lines = content.trim().split("\n");
             if (lines.length === 0) return;
@@ -351,6 +358,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         }
     };
 
+    // update button text based on state
     const getButtonTitle = () => {
         if (connectedDevice) return "Disconnect";
         if (isConnecting) return "Connecting";
@@ -358,6 +366,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         return "Scan for StepSmart";
     };
 
+    // ui render (button, messages, live pressure reading)
     return (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center"}}>
            <View style={{ width: 200, height: 50 }}>
@@ -374,11 +383,11 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     Connected to {connectedDevice.name}
                 </Text>
             )}
-            {pressure !== null && (
+            {/* {pressure !== null && (
                 <Text style={{color: 'white', fontSize: 12, marginBottom: 5}}>
                     Pressure: {pressure}
                 </Text>
-            )}
+            )} */}
             </View>
         </View>
     );

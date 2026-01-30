@@ -4,45 +4,34 @@ import React, { useState, useEffect } from "react";
 import Heatmap from "./heatmap";
 
 export default function Index() {
-  const [averages, setAverages] = useState<number[] | null>(null); // pressure
-  const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null);
-  const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [averages, setAverages] = useState<number[] | null>(null); // pressure sensor averages
+  const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null); // accel data
+  const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null); // gyro data
+  // step metrics
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [cadence, setCadence] = useState<number | null>(null);
-
-  // const getColor = (value: number) => {
-  //   // Normalize 0-1
-  //   let intensity = Math.min(Math.max(value / 1023, 0), 1);
-
-  //   // Dramatic nonlinear mapping (log-like)
-  //   intensity = Math.pow(intensity, 3); // exponent >1: low values stay dark/red, high values jump to yellow
-
-  //   // Map intensity to hue: red (0°) → yellow (60°)
-  //   const hue = intensity * 60;
-
-  //   // Optional: tweak lightness for more dramatic effect
-  //   const lightness = 30 + intensity * 40; // 30% → 70%
-
-  //   return `hsl(${hue}, 100%, ${lightness}%)`;
-  // };
+  const [strideLength, setStrideLength] = useState<number | null>(null);
+  const [speed, setSpeed] = useState<number | null>(null);
 
   return (
     <View style={styles.container}>
 
       <View style={styles.buttonBox}>
-        <BLEButton 
+        <BLEButton // ble button, pass setter functions
           setPressureAverages={setAverages}
           setAccelAverages={setAccelAverages} 
           setGyroAverages={setGyroAverages}    
           setStepCount={setStepCount}
-          setCadence={setCadence}
+          setCadence={setCadence} 
+          setStrideLength={setStrideLength}
+          setSpeed={setSpeed}
         />
       </View>
 
       <View style={{ height: 10 }} />
 
       <View style={styles.strideGaitBox}>
-        {stepCount !== null && cadence !== null ? (
+        {stepCount !== null && cadence !== null && speed !== null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
           <>
             <Text style={styles.analysisText}>
               Step Count: {stepCount}
@@ -50,9 +39,15 @@ export default function Index() {
             <Text style={styles.analysisText}>
               Cadence: {Math.round(cadence)} steps/min
             </Text>
+            <Text style={styles.analysisText}>
+              Stride Length: {strideLength} m
+            </Text>
+            <Text style={styles.analysisText}>
+              Speed: {(speed).toFixed(2)} mph
+            </Text>
           </>
         ) : (
-           <Text style={styles.placeholderText}>Stride / Gait Analysis (Waiting for data)</Text>
+           <Text style={styles.placeholderText}>Stride & Gait Analysis (Waiting for data)</Text>
         )}
 
         {/* {accelAverages && gyroAverages ? (
@@ -73,7 +68,7 @@ export default function Index() {
       <View style={{ height: 10 }} />
 
       <View style={styles.heatmapBox}>
-        {averages && averages.length === 3 ? (
+        {averages && averages.length === 3 ? ( // render and display heatmap when data is valid
           <Heatmap averages={averages} />
         ) : (
           <Text style={styles.placeholderText}>Heatmap</Text>
@@ -89,6 +84,7 @@ export default function Index() {
   );
 }
 
+// stylesheet (css)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
