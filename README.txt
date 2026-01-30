@@ -19,10 +19,10 @@ Software
 - JavaScript/TypeScript
 
 Usage Guide
-- insert StepSmart insole into running shoe
-- ensure Arduino Nano 33 BLE Rev 2 and battery components are securely connected
-- open StepSmart mobile application
-- begin walking or running to steam data metrics
+- Insert StepSmart insole into running shoe
+- Ensure Arduino Nano 33 BLE Rev 2 and battery components are securely connected
+- Open StepSmart mobile application
+- Begin walking or running to steam data metrics
 
 Design Prototype Outlined Work:
 - Established Arduino Nano 33 BLE Rev 2 as BLE Peripheral, sending appropriate data through the service
@@ -33,15 +33,23 @@ Design Prototype Resolved Bugs:
 - Accelerometer axes data was incorrectly changing, issue was related to calibration
 - BLE Device Scan Button disappeared from App UI, fixed through debugging and proper routing in TypeScript
 
-Pre-Alpha build outlined work:
-- aquired Arduino Nano 33 BLE Rev 2, prototype shoe insoles, one pressure sensor to test, connectors, rechargable lithium 5V battery
-- tested compatability of battery voltage with Arduino
-- downloaded board type to Arduino IDE
-- ensured compatable connectors
-- loaded simple accelerometer and gyro code to the arduino, tested for functionality
-- researched Arduino bluetooth
-- began app UI
+Pre-Alpha build Outlined Work:
+- Aquired Arduino Nano 33 BLE Rev 2, prototype shoe insoles, one pressure sensor to test, connectors, rechargable lithium 5V battery
+- Tested compatability of battery voltage with Arduino
+- Downloaded board type to Arduino IDE
+- Ensured compatable connectors
+- Loaded simple accelerometer and gyro code to the arduino, tested for functionality
+- Researched Arduino bluetooth
+- Began app UI
 
-Bugs:
-- funky numbers from gyroscope values, will need to add a calibration detail to the code
-- lack of proper packet validation in current build
+Alpha Build Outlined Work:
+- Implemented heatmap and stride analysis features including step count, cadence, stride length, and speed
+- Designed PCB schematic and footprint
+- Researched which stride and gait features to implement and how
+
+Current Bugs:
+- Funky numbers from gyroscope values, will need to add a calibration detail to the code
+- Lack of proper packet validation in current build; application assumes valid BLE data
+- Automatic BLE reconnection is not supported
+- Analog input pins A1 and A2 are not functional
+- Heatmap and analysis features are not fully complete and require additional testing and calibration
