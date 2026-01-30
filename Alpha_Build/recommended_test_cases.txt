@@ -1,7 +1,7 @@
 StepSmart Recommended Test Cases
 --------------------------------
 
-1. Confirm reliable BLE data transmission from Arduino to Android app for a full usage session
+1. Confirm reliable BLE data transmission to Android app for a full usage session
 
 2. Confirm that all three pressure sensors transmit valid data
 
