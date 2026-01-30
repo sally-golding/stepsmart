@@ -7,7 +7,11 @@ Compatible Android device with the required application installed
 Step-by-Step Instructions
 
 1. Install and Set Up the Software
-Download and install the companion application on a supported Android device. Complete the initial setup as prompted within the app.
+Run the following command in a terminal: 
+
+    git clone https://github.com/sally-golding/stepsmart.git && cd stepsmart && npm run app 
+
+This command will clone the repository, navigate to the project folder, install required the dependencies, and start the development server. Open the application by scanning the QR code. Download and install the companion application on a supported Android device. Complete the initial setup as prompted within the app.
 
 2. Insert the Insole and Attach the Device
 Place the sensor insole inside your shoe. Secure the device firmly using the provided strap to ensure proper alignment and data accuracy.
@@ -16,7 +20,7 @@ Place the sensor insole inside your shoe. Secure the device firmly using the pro
 Turn on the device using the power switch. Verify that the device is powered on before proceeding.
 
 4. Start Recording
-When you are ready to begin your run, press the Record button in the application.
+When you are ready to begin your run, press the button in the application.
 
 5. Stop Recording After the Run
 Once your run is complete, stop the recording through the app to save the session data.
