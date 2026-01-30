@@ -1,0 +1,11 @@
+Implement a LED for user feedback within the circuit.
+
+When the device powers up successfully, and the BLE system successfully intiates, the LED should illuminate GREEN so that the user of the product knows that setup was successful.
+
+On the other hand, if the device does not power up sucessfully, or if the BLE system does not successfully initiate, the LED should not illuminate or illuminate RED respectively.
+
+When the LED does not illuminate at all, this informs the user that the system is off. So if the system's power switch is on and the LED still does not illuminate, this tells the user that there is a power delivery issue
+within the system.
+
+When the LED illuminates RED, this informs the user that the system successfully powered on but the BLE system could not initiate successfully. Further troubleshooting steps will be provided to the user to resolve this 
+BLE initialization issue.
