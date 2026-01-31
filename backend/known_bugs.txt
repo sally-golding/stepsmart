@@ -1,0 +1,2 @@
+Gyroscope and IMU data values are known to not initialize to a correct position. More research into proper calibration is needed, 
+as the values do not change appropriately when the system powers on from a neutral position.
