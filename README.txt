@@ -46,6 +46,7 @@ Alpha Build Outlined Work:
 - Implemented heatmap and stride analysis features including step count, cadence, stride length, and speed
 - Designed PCB schematic and footprint
 - Researched which stride and gait features to implement and how
+- Designed new Arduino code to account for feedback LED functionality
 
 Current Bugs:
 - Funky numbers from gyroscope values, will need to add a calibration detail to the code
