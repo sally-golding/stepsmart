@@ -9,9 +9,9 @@ BLEStringCharacteristic gyroChar("1385f9cd-f88f-4ebe-982f-0828bffb54ee", BLERead
 #define FORCE_SENSOR_PIN_1 A0
 #define FORCE_SENSOR_PIN_2 A3
 #define FORCE_SENSOR_PIN_3 A4
-#define RED_PIN 5
-#define GREEN_PIN 6
-#define BLUE_PIN 9
+#define RED_PIN 2
+#define GREEN_PIN 3
+#define BLUE_PIN 4
 
 void setup() {
 
