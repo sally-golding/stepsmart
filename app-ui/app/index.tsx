@@ -65,7 +65,7 @@ export default function Index() {
             </Text>
           </>
         ) : (
-          <Text style={styles.placeholderText}>Stride / Gait Analysis (Waiting for accel/gyro data)</Text>
+          <Text style={styles.placeholderText}>Accel & Gyro Data</Text>
         )} */}
 
       </View>
@@ -92,18 +92,29 @@ export default function Index() {
             if (maxPressure === toe) mostPressureRegion = "toe";
             if (maxPressure === arch) mostPressureRegion = "arch";
             if (maxPressure === heel) mostPressureRegion = "heel";
+            //if (toe === arch && toe === heel && arch === heel) mostPressureRegion = "NA"
 
             // strike type
             let strikeType = "unknown";
             if (heel < toe) strikeType = "heel strike";
             else if (toe < heel) strikeType = "toe strike";
-            else strikeType = "flat/midfoot strike";
+            else if (arch < heel && arch < toe) strikeType = "flat/midfoot strike";
+            else strikeType = "even"
 
             // insights
-            const insights = `Most pressure detected is on the ${mostPressureRegion}\n` +
+            const insights = `Most pressure is detected on the ${mostPressureRegion}\n` +
                        `Estimated strike type: ${strikeType}`;
             
-            return <Text style={styles.analysisText}>{insights}</Text>;
+            return (
+              <View>
+                <Text style={styles.analysisText}>
+                  Most pressure is detected on the {mostPressureRegion}
+                </Text>
+                <Text style={styles.analysisText}>
+                  Estimated strike type: {strikeType}
+                </Text>
+              </View>
+            );
           })()
       ) : (
         <Text style={styles.placeholderText}>Insights</Text>

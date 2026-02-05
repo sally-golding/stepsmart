@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import * as FileSystem from "expo-file-system/legacy";
@@ -106,12 +106,20 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const [isScanning, setIsScanning] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState<string>("");
+    const [disconnectSub, setDisconnectSub] = useState<(() => void) | null>(null);
+    const isManualDisconnect = useRef(false);
     
-    // step detector instance *resets if component re-renders*
+    // step detector instance *resets if component re-renders* (not to happen if device disconnected unexpectedly)
     // *hard-coded height for testing*
     const heightFeet = 5;
-    const heightInches = 6
-    const stepDetector = new StepDetector(heightFeet, heightInches);
+    const heightInches = 6;
+    const stepDetectorRef = useRef<StepDetector | null>(null);
+    if (!stepDetectorRef.current) {
+        stepDetectorRef.current = new StepDetector(heightFeet, heightInches);
+    }
+    const stepDetector = stepDetectorRef.current;
+
+    const isNewSession = useRef(true);
 
     // scan and connect logic (handles button press => scan, stop scanning, disconnect)
 
@@ -151,7 +159,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             manager.stopDeviceScan();
             setIsScanning(false);
             setError("Device not found");
-        }, 15000);
+        }, 10000);
 
         // start scan
         console.log("Starting scan for", DEVICE_NAME);
@@ -187,17 +195,27 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
     // disconnect from ble device
     const disconnect = async () => {
+        if (!connectedDevice) return;
+
         if (connectedDevice) {
             console.log("Disconnecting from device");
             try {
+                isManualDisconnect.current = true;
+                disconnectSub?.();
+                setDisconnectSub(null);
+
                 await connectedDevice.cancelConnection();
                 setConnectedDevice(null);
-                //setPressure(null);
+                setError("");
+
+                isNewSession.current = true;
                 stepDetector.reset(); // clear step count and cadence for next connection
-                console.log("Disconnected");
+                console.log("Manually Disconnected");
                 computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
             } catch (e: any) {
                 console.error("Disconnect error:", e.message);
+            } finally {
+                isManualDisconnect.current = false;
             }
         }
     };
@@ -227,14 +245,31 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             console.log("Services discovered!");
 
             setConnectedDevice(connected);
+
+            const sub = manager.onDeviceDisconnected(connected.id, (error, device) => {
+                if (isManualDisconnect.current) {
+                    return;
+                }
+                console.log("Device disconnected unexpectedly");
+                setConnectedDevice(null);
+                setIsScanning(false);
+                setIsConnecting(false);
+                setError("Device disconnected");
+            });
+
+            setDisconnectSub(() => sub.remove);
+
             setIsConnecting(false);
             console.log("Connected!");
 
             // clear files
-            resetFile(accel_file)
-            resetFile(pressure_file);
-            resetFile(gyro_file);
-
+            if (isNewSession.current) {
+                resetFile(accel_file)
+                resetFile(pressure_file);
+                resetFile(gyro_file);
+                isNewSession.current = false;
+            }
+            
             // new session
             if (onConnect) {
                 onConnect();
@@ -272,6 +307,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
                         const avgZ = accelValues.z.reduce((a, b) => a + b, 0) / accelValues.z.length;
                         setAccelAverages({ x: avgX, y: avgY, z: avgZ });
+                        //setAccelAverages({ x: x, y: y, z: z });
 
                         appendFile(accel_file, raw + "\n"); // store to file
                     }
@@ -380,6 +416,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         if (connectedDevice) return "Disconnect";
         if (isConnecting) return "Connecting";
         if (isScanning) return "Stop Scanning";
+        if (error == "Device disconnected") return "Reconnect";
         return "Scan for StepSmart";
     };
 

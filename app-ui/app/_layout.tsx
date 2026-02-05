@@ -13,8 +13,8 @@ export default function Layout() {
           headerTintColor: "#fff",
           headerTitle: () => (
             <Text style={{ color: "#fff", fontSize: 20 }}>
-              <Text style={{ fontWeight: "bold" }}>step</Text>
-              <Text style={{ fontStyle: "italic" }}>smart</Text>
+              <Text style={{ fontWeight: "bold" }}>Step</Text>
+              <Text style={{ fontWeight: "bold" }}>Smart</Text>
             </Text>
           ),
         }}
