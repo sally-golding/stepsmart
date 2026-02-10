@@ -76,20 +76,6 @@ export async function requestLocationPermission() {
 
 }
 
-export async function calculateSpeed(detector: StepDetector) {
-
-    await Location.watchPositionAsync(
-        {
-            accuracy: Location.Accuracy.BestForNavigation,
-            timeInterval: 1000,
-            distanceInterval: 0.5,
-        },
-        (location) => {
-            detector.setSpeed(location.coords.speed);
-        }
-    );
-}
-
 // ble permissions: scan, connect, location (android)
 export async function requestBlePermissions() {
   if (Platform.OS === "android") {
@@ -142,6 +128,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     // *hard-coded height for testing*
     const heightFeet = 5;
     const heightInches = 6;
+    const locationRef = useRef<Location.LocationSubscription | null>(null);
     const stepDetectorRef = useRef<StepDetector | null>(null);
     if (!stepDetectorRef.current) {
         stepDetectorRef.current = new StepDetector(heightFeet, heightInches);
@@ -158,7 +145,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
         // request permissions and check power state
         setError("");
-        console.log("Requesting permissions");
+        console.log("Requesting location permissions");
         const location_granted = await requestLocationPermission();
 
         if (!location_granted) {
@@ -167,11 +154,12 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             return;
         }
 
+        console.log("Requesting BLE permissions");
         const granted = await requestBlePermissions();
         
         if (!granted) {
-            console.log("Permissions denied");
-            setError("Permissions denied");
+            console.log("BLE permissions denied");
+            setError("BLE permissions denied");
             return;
         }
         
@@ -247,6 +235,14 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
                 isNewSession.current = true;
                 stepDetector.reset(); // clear step count and cadence for next connection
+
+                if(locationRef.current) {
+
+                    locationRef.current.remove();
+                    locationRef.current = null;
+
+                }
+
                 console.log("Manually Disconnected");
                 computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
             } catch (e: any) {
@@ -312,6 +308,28 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 onConnect();
             }
 
+            if(!locationRef.current) {
+
+                locationRef.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.BestForNavigation,
+                    timeInterval: 1000,
+                    distanceInterval: 0.5,
+                },
+
+                (location) => {
+
+                    if(location.coords.speed != null) {
+
+                    
+                        stepDetector.setSpeed(location.coords.speed);
+
+                    }
+                }
+                );
+
+            }
+
             // accelerometer monitoring
             connected.monitorCharacteristicForService(
                 SERVICE_UUID,
@@ -367,7 +385,6 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                             // setPressure(parseFloat(parts[0])); // display first pressure sensor only *for testing*
                             appendFile(pressure_file, formatted + "\n"); // store to file
 
-                            calculateSpeed(stepDetector);
                             const result = stepDetector.update(parseFloat(parts[0]), parseFloat(parts[1]), parseFloat(parts[2]), Date.now());
                             setStepCount(result.stepCount);
                             setCadence(result.cadence);

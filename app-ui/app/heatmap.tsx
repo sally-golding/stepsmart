@@ -1,6 +1,6 @@
 // heatmap
 import React from "react";
-import Svg, { Defs, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg"; // use svg for image
+import Svg, { Defs, RadialGradient, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg"; // use svg for image
 
 type HeatmapProps = {
   averages: number[]; // input [toe, arch, heel]
@@ -39,6 +39,11 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
     "M364.611 102.14c-9.291 13.86-7.525 31.32 3.943 39.01s28.296 2.69 37.587-11.17c9.29-13.86 7.524-31.323-3.944-39.011s-28.296-2.688-37.586 11.171"
   ];
 
+  const archStartY = 200;
+  const archHeight = 80;
+  const archX = 120;
+  const archWidth = 170;
+
   return (
     <Svg 
         width="95%" 
@@ -50,7 +55,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         {/* blended gradient (vertical) */}
         <LinearGradient id="heatGradient" x1="0%" y1="100%" x2="0%" y2="0%">
           <Stop offset="10%" stopColor={heelColor} />
-          <Stop offset="50%" stopColor={archColor} />
+          <Stop offset="65%" stopColor={archColor} />
           <Stop offset="90%" stopColor={toeColor} />
         </LinearGradient>
 
@@ -81,6 +86,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
       </G>
     </Svg>
   );
+
 };
 
 export default Heatmap;

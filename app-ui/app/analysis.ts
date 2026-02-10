@@ -52,7 +52,7 @@ export class StepDetector {
         
         // calculate step count
 
-        if (pressure_sensor1 >= 50 || pressure_sensor2 >= 50 || pressure_sensor3 >= 50) {
+        if (pressure_sensor1 <= 400 || pressure_sensor2 <= 400 || pressure_sensor3 <= 400) {
 
             if(!this.isGrounded) {
 
@@ -63,7 +63,7 @@ export class StepDetector {
                 this.stepTimes.push(timestamp);
             }     
 
-        } else if (pressure_sensor1 < 50 && pressure_sensor2 < 50 && pressure_sensor3 < 50) {
+       } else if (pressure_sensor1 > 400 && pressure_sensor2 > 400 && pressure_sensor3 > 400) {
 
             this.isGrounded = false;
 
