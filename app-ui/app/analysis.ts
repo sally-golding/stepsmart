@@ -7,11 +7,14 @@ export interface StepDetectionResult {
 }
 
 export class StepDetector {
+
+    private isGrounded : boolean = true;
+
     private stepCount = 0;
     private stepTimes: number[] = [];
 
-    private lastZ = 0;
     private lastStepTime = 0;
+    private rawSpeed = 0;
 
     // *calibrate*
     private impactThreshold = -1.2;    // foot strike
@@ -29,37 +32,42 @@ export class StepDetector {
         this.height = heightInches * 0.0254;
     }
 
+    public setSpeed(gpsSpeed: number | null) {
+
+        if(gpsSpeed !== null) {
+
+            this.rawSpeed = gpsSpeed;
+
+        } else {
+
+            this.rawSpeed = 0;
+
+        }
+        
+
+    }
+
     // updates each time there is a new z value
-    public update(z: number, timestamp: number): StepDetectionResult {
+    public update(pressure_sensor1: number, pressure_sensor2: number, pressure_sensor3: number, timestamp: number): StepDetectionResult {
+        
         // calculate step count
 
-        // strike (down)
-        if (this.lastStepTime === 0) {
-            // first reading
-            this.lastZ = z;
-            this.lastStepTime = timestamp;
-            return { stepCount: 0, cadence: 0 , strideLength: 0, speed: 0,};
-        }
+        if (pressure_sensor1 >= 50 || pressure_sensor2 >= 50 || pressure_sensor3 >= 50) {
 
-        // if insole has lifted, increment step count and log time
-        if (
-            this.readyForStep &&
-            z < this.impactThreshold &&
-            this.lastZ >= this.impactThreshold &&
-            timestamp - this.lastStepTime > this.minStepInterval
-        ) {
-            this.stepCount++;
-            this.lastStepTime = timestamp;
-            this.stepTimes.push(timestamp);
-            this.readyForStep = false;
-        }
+            if(!this.isGrounded) {
 
-        // reset after foot lifts
-        if (!this.readyForStep && z > this.releaseThreshold) {
-            this.readyForStep = true;
-        }
+                this.isGrounded = true;
+                this.stepCount += 1;
 
-        this.lastZ = z;
+                this.lastStepTime = timestamp;
+                this.stepTimes.push(timestamp);
+            }     
+
+        } else if (pressure_sensor1 < 50 && pressure_sensor2 < 50 && pressure_sensor3 < 50) {
+
+            this.isGrounded = false;
+
+        }
 
         // calculate cadence
         this.stepTimes = this.stepTimes.filter(t => timestamp - t <= 10000);
@@ -80,8 +88,8 @@ export class StepDetector {
         const stepLength = (cadence === 0) ? 0 : legLength * strideFactor;
         const strideLength = (cadence === 0) ? 0 : stepLength * 2;
 
-        // calculate speed
-        const speed = stepLength * (cadence / 60) * 2.23694;
+        // calculate speed in MPH instead of MPS
+        const speed = this.rawSpeed * 2.23694;
 
         return {
             stepCount: this.stepCount,
@@ -93,11 +101,14 @@ export class StepDetector {
 
     // reset values
     public reset() {
+
+        this.isGrounded = true;
+        this.rawSpeed = 0;
         this.stepCount = 0;
         this.stepTimes = [];
-        this.lastZ = 0;
         this.lastStepTime = 0;
         this.readyForStep = true;
+
     }
 }
 

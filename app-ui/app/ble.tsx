@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Location from 'expo-location';
 import { StepDetector } from "./analysis"
 
 interface BLEButtonProps {
@@ -60,6 +61,34 @@ type PressureSample = {
 };
 
 let pressureBuffer: PressureSample[] = [];
+
+export async function requestLocationPermission() {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+
+  if (status !== 'granted') {
+
+    console.log('Permission to access location was denied');
+    return false;
+
+  }
+
+  return true;
+
+}
+
+export async function calculateSpeed(detector: StepDetector) {
+
+    await Location.watchPositionAsync(
+        {
+            accuracy: Location.Accuracy.BestForNavigation,
+            timeInterval: 1000,
+            distanceInterval: 0.5,
+        },
+        (location) => {
+            detector.setSpeed(location.coords.speed);
+        }
+    );
+}
 
 // ble permissions: scan, connect, location (android)
 export async function requestBlePermissions() {
@@ -130,6 +159,14 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         // request permissions and check power state
         setError("");
         console.log("Requesting permissions");
+        const location_granted = await requestLocationPermission();
+
+        if (!location_granted) {
+            console.log("Location Permissions denied");
+            setError("Location Permissions denied");
+            return;
+        }
+
         const granted = await requestBlePermissions();
         
         if (!granted) {
@@ -295,13 +332,6 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         accelValues.y.push(y);
                         accelValues.z.push(z);
 
-                        // step detection (z), update ui (real-time)
-                        const result = stepDetector.update(z, Date.now());
-                        setStepCount(result.stepCount);
-                        setCadence(result.cadence);
-                        setStrideLength(result.strideLength);
-                        setSpeed(result.speed);
-
                         // compute and set averages *double check*
                         const avgX = accelValues.x.reduce((a, b) => a + b, 0) / accelValues.x.length;
                         const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
@@ -336,6 +366,13 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                             const formatted = `${parts[0]},${parts[1]},${parts[2]}`;
                             // setPressure(parseFloat(parts[0])); // display first pressure sensor only *for testing*
                             appendFile(pressure_file, formatted + "\n"); // store to file
+
+                            calculateSpeed(stepDetector);
+                            const result = stepDetector.update(parseFloat(parts[0]), parseFloat(parts[1]), parseFloat(parts[2]), Date.now());
+                            setStepCount(result.stepCount);
+                            setCadence(result.cadence);
+                            setStrideLength(result.strideLength);
+                            setSpeed(result.speed);
                         }
                     }
                 }
