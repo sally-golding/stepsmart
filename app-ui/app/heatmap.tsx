@@ -1,6 +1,6 @@
 // heatmap
 import React from "react";
-import Svg, { Defs, RadialGradient, LinearGradient, Stop, G, Path, Mask, Rect } from "react-native-svg"; // use svg for image
+import Svg, { Defs, RadialGradient, LinearGradient, Circle, Stop, G, Path, Mask, Rect } from "react-native-svg"; // use svg for image
 
 type HeatmapProps = {
   averages: number[]; // input [toe, arch, heel]
@@ -51,15 +51,13 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         viewBox="0 0 412 523" 
         preserveAspectRatio="xMidYMid meet"
     >
-      <Defs>
-        {/* blended gradient (vertical) */}
+      {/* <Defs>
         <LinearGradient id="heatGradient" x1="0%" y1="100%" x2="0%" y2="0%">
           <Stop offset="10%" stopColor={heelColor} />
           <Stop offset="65%" stopColor={archColor} />
           <Stop offset="90%" stopColor={toeColor} />
         </LinearGradient>
 
-        {/* mask (draw shape) */}
         <Mask id="footMask">
           <G fill="white">
             {footPaths.map((d, i) => (
@@ -67,7 +65,32 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
             ))}
           </G>
         </Mask>
+      </Defs> */}
+
+      <Defs>
+        <RadialGradient id="heelGradient" cx="50%" cy="50%" r="75%">
+          <Stop offset="0%" stopColor={heelColor} stopOpacity="1" />
+          <Stop offset="100%" stopColor={archColor} stopOpacity="0"  />
+        </RadialGradient>
+
+        <RadialGradient id="archGradient"cx="50%" cy="50%" r="75%">
+          <Stop offset="0%" stopColor={archColor} stopOpacity="1" />
+          <Stop offset="100%" stopColor={archColor} stopOpacity="0"  />
+        </RadialGradient>
+
+        <RadialGradient id="toeGradient" cx="50%" cy="50%" r="75%">
+          <Stop offset="0%" stopColor={toeColor} stopOpacity="1" />
+          <Stop offset="100%" stopColor={toeColor} stopOpacity="0"  />
+        </RadialGradient>
       </Defs>
+
+      <Mask id="footMask">
+          <G fill="white">
+            {footPaths.map((d, i) => (
+              <Path key={`mask-${i}`} d={d} />
+            ))}
+          </G>
+      </Mask>
 
       <Rect // heatmap rect clipped by mask (restricted to foot outline)
         x="0"
@@ -79,11 +102,44 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
       />
 
       {/* outline overlay */}
-      <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}> 
+      {/* <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}> 
+        {footPaths.map((d, i) => (
+          <Path key={`outline-${i}`} d={d} />
+        ))}
+      </G> */}
+
+      <G mask="url(#footMask)">
+        {/* Heel */}
+        <Circle
+          cx={270}
+          cy={440}
+          r={90}
+          fill="url(#heelGradient)"
+        />
+
+        {/* Arch */}
+        <Circle
+          cx={300}
+          cy={200}
+          r={90}
+          fill="url(#archGradient)"
+        />
+
+        {/* Toe */}
+        <Circle
+          cx={180}
+          cy={200}
+          r={90}
+          fill="url(#toeGradient)"
+        />
+      </G>
+
+      <G fill="none" stroke="#ffffff" strokeWidth="2" opacity={0.3}>
         {footPaths.map((d, i) => (
           <Path key={`outline-${i}`} d={d} />
         ))}
       </G>
+
     </Svg>
   );
 

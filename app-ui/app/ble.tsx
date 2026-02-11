@@ -13,6 +13,8 @@ interface BLEButtonProps {
   setCadence: (cadence: number) => void;
   setStrideLength: (stride : number) => void;
   setSpeed: (speed: number) => void;
+  setPace: (pace: number) => void;
+  setTimer: (time: string) => void;
   onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
 }
 
@@ -107,7 +109,7 @@ export async function requestBlePermissions() {
   return true;
 }
 
-export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, onConnect, }: BLEButtonProps) {
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, setPace, onConnect, }: BLEButtonProps) {
     // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
@@ -308,27 +310,36 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 onConnect();
             }
 
-            if(!locationRef.current) {
+            const SPEED_DEADBAND = 0.4;
+            const MAX_ACCURACY = 10;
+            const ALPHA = 0.2;
 
-                locationRef.current = await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000,
-                    distanceInterval: 0.5,
-                },
+            let filteredSpeed = 0;
 
-                (location) => {
-
-                    if(location.coords.speed != null) {
-
-                    
-                        stepDetector.setSpeed(location.coords.speed);
-
-                    }
-                }
-                );
-
+            function smoothSpeed(raw: number) {
+                filteredSpeed = ALPHA * raw + (1 - ALPHA) * filteredSpeed;
+                return filteredSpeed;
             }
+
+            locationRef.current = await Location.watchPositionAsync(
+            {
+                accuracy: Location.Accuracy.High,
+                timeInterval: 2000,
+                distanceInterval: 1.5,
+            },
+            (location) => {
+                const { speed, accuracy } = location.coords;
+
+                if (accuracy != null && accuracy > MAX_ACCURACY || speed == null) return;
+
+                let v = speed;
+                if (v < SPEED_DEADBAND) v = 0;
+
+                v = smoothSpeed(v);
+                stepDetector.setSpeed(v);
+            }
+            );
+
 
             // accelerometer monitoring
             connected.monitorCharacteristicForService(
@@ -375,7 +386,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         // multiple pressure values per packet => split
                         const raw = decode(characteristic.value);
                         const parts = raw.split(",").map(p => p.trim());
-                        console.log("Pressure sensors:", raw); // *for debugging*
+                        //console.log("Pressure sensors:", raw); // *for debugging*
 
                         //const first = parseFloat(parts[0]);
                         //const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
@@ -390,6 +401,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                             setCadence(result.cadence);
                             setStrideLength(result.strideLength);
                             setSpeed(result.speed);
+                            setPace(result.pace);
                         }
                     }
                 }

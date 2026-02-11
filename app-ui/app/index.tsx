@@ -12,6 +12,7 @@ export default function Index() {
   const [cadence, setCadence] = useState<number | null>(null);
   const [strideLength, setStrideLength] = useState<number | null>(null);
   const [speed, setSpeed] = useState<number | null>(null);
+  const[pace, setPace] = useState<number | null>(null);
 
   const handleNewSession = () => {
     setAverages(null); // only render heatmap post session, do not maintain previous heatmap during a new session
@@ -29,6 +30,7 @@ export default function Index() {
           setCadence={setCadence} 
           setStrideLength={setStrideLength}
           setSpeed={setSpeed}
+          setPace={setPace}
           onConnect={handleNewSession}
         />
       </View>
@@ -36,7 +38,7 @@ export default function Index() {
       <View style={{ height: 10 }} />
 
       <View style={styles.strideGaitBox}>
-        {stepCount !== null && cadence !== null && speed !== null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
+        {stepCount !== null && cadence !== null && speed !== null && pace != null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
           <>
             <Text style={styles.analysisText}>
               Step Count: {stepCount}
@@ -49,6 +51,9 @@ export default function Index() {
             </Text>
             <Text style={styles.analysisText}>
               Speed: {(speed).toFixed(2)} mph
+            </Text>
+            <Text style={styles.analysisText}>
+              Pace: {(pace).toFixed(2)} min/mile
             </Text>
           </>
         ) : (

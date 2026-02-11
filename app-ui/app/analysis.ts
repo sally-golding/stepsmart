@@ -4,6 +4,7 @@ export interface StepDetectionResult {
     cadence: number; // steps / minute
     strideLength: number; // meters
     speed: number; // miles / hour
+    pace: number; // minute / mile
 }
 
 export class StepDetector {
@@ -15,6 +16,7 @@ export class StepDetector {
 
     private lastStepTime = 0;
     private rawSpeed = 0;
+    private pace = 0;
 
     // *calibrate*
     private impactThreshold = -1.2;    // foot strike
@@ -71,31 +73,59 @@ export class StepDetector {
 
         // calculate cadence
         this.stepTimes = this.stepTimes.filter(t => timestamp - t <= 10000);
-        const cadence = this.stepTimes.length > 1 ? (this.stepTimes.length / 10) * 60 : 0;
+        let cadence = 0;
+        if (this.stepTimes.length > 1) {
+            const firstStep = this.stepTimes[0];
+            const lastStep = this.stepTimes[this.stepTimes.length - 1];
+            
+            // Calculate actual time span in seconds (e.g., 4.2 seconds)
+            const timeSpanSeconds = (lastStep - firstStep) / 1000;
 
-        // calculate stride length 
-        // industry standard: stride length = 0.41 * leg length, leg length = 0.53 * height
-        const legLength = this.height * 0.53;
-
-        // stride factor for running vs walking based on cadence (industry standard)
-        let strideFactor: number;
-        if (cadence <= 140) {
-            strideFactor = 0.41;
-        } else {
-            strideFactor = 0.65;
+            if (timeSpanSeconds > 0) {
+                // (Steps / Time) * 60 = Steps Per Minute
+                // Use length - 1 because we are measuring intervals BETWEEN steps
+                cadence = ((this.stepTimes.length - 1) / timeSpanSeconds) * 60;
+            }
         }
+        
+        //const cadence = this.stepTimes.length > 1 ? (this.stepTimes.length / 10) * 60 : 0;
 
-        const stepLength = (cadence === 0) ? 0 : legLength * strideFactor;
-        const strideLength = (cadence === 0) ? 0 : stepLength * 2;
+        // // calculate stride length 
+        // // industry standard: stride length = 0.41 * leg length, leg length = 0.53 * height
+        // const legLength = this.height * 0.53;
+
+        // // stride factor for running vs walking based on cadence (industry standard)
+        // let strideFactor: number;
+        // if (cadence <= 140) {
+        //     strideFactor = 0.41;
+        // } else {
+        //     strideFactor = 0.65;
+        // }
+
+        // const stepLength = (cadence === 0) ? 0 : legLength * strideFactor;
+        // const strideLength = (cadence === 0) ? 0 : stepLength * 2;
+
+        let strideLength = 0;
+        if (cadence > 0) {
+            const stepsPerSecond = cadence / 60;
+            const stepLengthInMeters = this.rawSpeed / stepsPerSecond;
+            strideLength = stepLengthInMeters * 2;
+        }
 
         // calculate speed in MPH instead of MPS
         const speed = this.rawSpeed * 2.23694;
+
+        let pace = 0;
+        if (speed > 0.1) {
+            pace = 60 / speed;
+        }
 
         return {
             stepCount: this.stepCount,
             cadence: Math.round(cadence),
             strideLength: Number(strideLength.toFixed(2)),
             speed: Number(speed.toFixed(2)),
+            pace: Number(pace.toFixed(2)),
         };
     }
 
@@ -108,7 +138,7 @@ export class StepDetector {
         this.stepTimes = [];
         this.lastStepTime = 0;
         this.readyForStep = true;
-
+        this.pace = 0;
     }
 }
 
