@@ -5,6 +5,7 @@ export interface StepDetectionResult {
     strideLength: number; // meters
     speed: number; // miles / hour
     pace: number; // minute / mile
+    distance: number,
 }
 
 export class StepDetector {
@@ -17,6 +18,8 @@ export class StepDetector {
     private lastStepTime = 0;
     private rawSpeed = 0;
     private pace = 0;
+    private distanceMeters = 0;
+    private lastTimestamp = 0;
 
     // *calibrate*
     private impactThreshold = -1.2;    // foot strike
@@ -59,7 +62,7 @@ export class StepDetector {
             if(!this.isGrounded) {
 
                 this.isGrounded = true;
-                this.stepCount += 1;
+                this.stepCount += 2;
 
                 this.lastStepTime = timestamp;
                 this.stepTimes.push(timestamp);
@@ -87,7 +90,7 @@ export class StepDetector {
                 cadence = ((this.stepTimes.length - 1) / timeSpanSeconds) * 60;
             }
         }
-        
+
         //const cadence = this.stepTimes.length > 1 ? (this.stepTimes.length / 10) * 60 : 0;
 
         // // calculate stride length 
@@ -120,12 +123,23 @@ export class StepDetector {
             pace = 60 / speed;
         }
 
+        // calculate distance
+        if (this.lastTimestamp !== 0) {
+            const deltaTimeSeconds = (timestamp - this.lastTimestamp) / 1000;
+            // distance = speed(m/s) * time(s)
+            const deltaDistance = this.rawSpeed * deltaTimeSeconds;
+            this.distanceMeters += deltaDistance;
+        }
+        this.lastTimestamp = timestamp;
+        const distanceMiles = this.distanceMeters * 0.000621371;
+
         return {
             stepCount: this.stepCount,
             cadence: Math.round(cadence),
             strideLength: Number(strideLength.toFixed(2)),
             speed: Number(speed.toFixed(2)),
             pace: Number(pace.toFixed(2)),
+            distance: Number(distanceMiles.toFixed(2)),
         };
     }
 
@@ -139,6 +153,8 @@ export class StepDetector {
         this.lastStepTime = 0;
         this.readyForStep = true;
         this.pace = 0;
+        this.distanceMeters = 0;
+        this.lastTimestamp = 0;
     }
 }
 

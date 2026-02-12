@@ -8,14 +8,29 @@ export default function Index() {
   const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null); // accel data
   const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null); // gyro data
   // step metrics
-  const [stepCount, setStepCount] = useState<number | null>(null);
-  const [cadence, setCadence] = useState<number | null>(null);
-  const [strideLength, setStrideLength] = useState<number | null>(null);
-  const [speed, setSpeed] = useState<number | null>(null);
-  const[pace, setPace] = useState<number | null>(null);
+  const [stepCount, setStepCount] = useState<number>(0);
+  const [cadence, setCadence] = useState<number>(0);
+  const [strideLength, setStrideLength] = useState<number>(0);
+  const [speed, setSpeed] = useState<number>(0);
+  const [pace, setPace] = useState<number>(0);
+  const [distance, setDistance] = useState<number>(0);
+  const [timer, setTimer] = useState<string>("00:00:00");
 
   const handleNewSession = () => {
     setAverages(null); // only render heatmap post session, do not maintain previous heatmap during a new session
+    setStepCount(0);
+    setCadence(0);
+    setStrideLength(0);
+    setSpeed(0);
+    setPace(0);
+    setTimer("00:00:00");
+  };
+
+  const formatPace = (decimalPace: number | null) => {
+    if (!decimalPace || decimalPace === 0) return "0:00";
+    const mins = Math.floor(decimalPace);
+    const secs = Math.round((decimalPace - mins) * 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -31,6 +46,8 @@ export default function Index() {
           setStrideLength={setStrideLength}
           setSpeed={setSpeed}
           setPace={setPace}
+          setDistance={setDistance}
+          setTimer={setTimer}
           onConnect={handleNewSession}
         />
       </View>
@@ -38,22 +55,34 @@ export default function Index() {
       <View style={{ height: 10 }} />
 
       <View style={styles.strideGaitBox}>
-        {stepCount !== null && cadence !== null && speed !== null && pace != null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
+        {stepCount !== null && cadence !== null && speed !== null && pace != null && distance != null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
           <>
             <Text style={styles.analysisText}>
-              Step Count: {stepCount}
+              <Text style={{ fontWeight: "bold" }}>Time:</Text> {timer}
             </Text>
             <Text style={styles.analysisText}>
-              Cadence: {Math.round(cadence)} steps/min
+              <Text style={{ fontWeight: "bold" }}>Distance:</Text> {distance?.toFixed(2)} miles
             </Text>
             <Text style={styles.analysisText}>
-              Stride Length: {strideLength} m
+              <Text style={{ fontWeight: "bold" }}>Step Count:</Text> {stepCount}
+            </Text>
+
+            {/* <Text style={[styles.analysisText, {fontWeight: "bold"}]}>
+              {averages ? "Average Stats " : "Live Stats: "}
+            </Text> */}
+
+            <Text style={styles.analysisText}>
+              <Text style={{ fontWeight: "bold" }}>Speed:</Text> {(speed).toFixed(2)} mph
             </Text>
             <Text style={styles.analysisText}>
-              Speed: {(speed).toFixed(2)} mph
+              <Text style={{ fontWeight: "bold" }}>Pace:</Text> {formatPace(pace)}/mile
+            </Text>
+            
+            <Text style={styles.analysisText}>
+              <Text style={{ fontWeight: "bold" }}>Cadence:</Text> {Math.round(cadence)} steps/min
             </Text>
             <Text style={styles.analysisText}>
-              Pace: {(pace).toFixed(2)} min/mile
+              <Text style={{ fontWeight: "bold" }}>Stride Length:</Text> {strideLength} m
             </Text>
           </>
         ) : (
@@ -95,28 +124,33 @@ export default function Index() {
             let mostPressureRegion = "unknown";
             const maxPressure = Math.min(toe, arch, heel);
             if (maxPressure === toe) mostPressureRegion = "toe";
-            if (maxPressure === arch) mostPressureRegion = "arch";
-            if (maxPressure === heel) mostPressureRegion = "heel";
+            if (maxPressure === arch) mostPressureRegion = "little toe";
+            if (maxPressure === heel) mostPressureRegion = "big toe";
             //if (toe === arch && toe === heel && arch === heel) mostPressureRegion = "NA"
 
             // strike type
-            let strikeType = "unknown";
-            if (heel < toe) strikeType = "heel strike";
-            else if (toe < heel) strikeType = "toe strike";
-            else if (arch < heel && arch < toe) strikeType = "flat/midfoot strike";
-            else strikeType = "even"
+            let strikeType = "Unknown";
+            if (heel < toe) strikeType = "Heel Strike";
+            else if (toe < heel) strikeType = "Left Forefoot Strike";
+            else if (arch < heel && arch < toe) strikeType = "Right Forefoot Strike";
+            else strikeType = "Even"
 
             // insights
-            const insights = `Most pressure is detected on the ${mostPressureRegion}\n` +
-                       `Estimated strike type: ${strikeType}`;
+            let insights = "";
+            if (strikeType === "Heel Strike") insights = "Try increasing your cadence and avoid overstriding so your foot lands closer beneath your hips."
+            if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") 
+              insights = "Focus on landing your foot beneath your hips to reduce understriding."
             
             return (
               <View>
-                <Text style={styles.analysisText}>
+                {/* <Text style={styles.analysisText}>
                   Most pressure is detected on the {mostPressureRegion}
+                </Text> */}
+                <Text style={styles.analysisText}>
+                  <Text style={{ fontWeight: "bold" }}>Estimated Strike Type:</Text> {strikeType}
                 </Text>
                 <Text style={styles.analysisText}>
-                  Estimated strike type: {strikeType}
+                  {insights}
                 </Text>
               </View>
             );
@@ -155,7 +189,7 @@ const styles = StyleSheet.create({
   },
   strideGaitBox: {
     width: "90%",
-    height: 150,
+    height: 205,
     backgroundColor: "#3a3a3c",
     borderRadius: 20,
     justifyContent: "center",
@@ -165,7 +199,7 @@ const styles = StyleSheet.create({
   },
   heatmapBox: {
     width: "90%",
-    height: 275,
+    height: 255,
     backgroundColor: "#3a3a3c",
     borderRadius: 20,
     justifyContent: "center",
@@ -176,7 +210,7 @@ const styles = StyleSheet.create({
   },
   insightsBox: {
     width: "90%",
-    height: 120,
+    height: 90,
     // backgroundColor: "#e6e6e6",
     backgroundColor: "#3a3a3c",
     borderRadius: 20,

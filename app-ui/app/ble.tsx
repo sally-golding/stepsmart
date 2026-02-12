@@ -14,6 +14,7 @@ interface BLEButtonProps {
   setStrideLength: (stride : number) => void;
   setSpeed: (speed: number) => void;
   setPace: (pace: number) => void;
+  setDistance: (pace: number) => void;
   setTimer: (time: string) => void;
   onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
 }
@@ -28,6 +29,9 @@ const manager = new BleManager();
 const pressure_file: string = (FileSystem as any).documentDirectory + "pressure_data.txt";
 const accel_file: string = (FileSystem as any).documentDirectory + "accel_data.txt";
 const gyro_file: string = (FileSystem as any).documentDirectory + "gyro_data.txt";
+
+// cadence, stride length, speed, and pace
+const metrics_file: string = (FileSystem as any).documentDirectory + "metrics_data.txt";
 
 // clear file with a new connection
 async function resetFile(path: string) {
@@ -109,7 +113,7 @@ export async function requestBlePermissions() {
   return true;
 }
 
-export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, setPace, onConnect, }: BLEButtonProps) {
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, setPace, setDistance, setTimer, onConnect, }: BLEButtonProps) {
     // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
@@ -125,6 +129,22 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const [error, setError] = useState<string>("");
     const [disconnectSub, setDisconnectSub] = useState<(() => void) | null>(null);
     const isManualDisconnect = useRef(false);
+
+    // timer
+    const [startTime, setStartTime] = useState<number | null>(null);
+    const [now, setNow] = useState<number | null>(null);
+
+    // const sessionData = useRef({
+    //     cadenceSum: 0,
+    //     strideSum: 0,
+    //     speedSum: 0,
+    //     paceSum: 0,
+    //     count: 0
+    // });
+
+    // const resetSessionAccumulators = () => {
+    //     sessionData.current = { cadenceSum: 0, strideSum: 0, speedSum: 0, paceSum: 0, count: 0 };
+    // };
     
     // step detector instance *resets if component re-renders* (not to happen if device disconnected unexpectedly)
     // *hard-coded height for testing*
@@ -138,6 +158,25 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const stepDetector = stepDetectorRef.current;
 
     const isNewSession = useRef(true);
+
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (connectedDevice && startTime) {
+            interval = setInterval(() => {
+                const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+                const hrs = Math.floor(totalSeconds / 3600);
+                const mins = Math.floor((totalSeconds % 3600) / 60);
+                const secs = totalSeconds % 60;
+                
+                const formatted = [hrs, mins, secs]
+                    .map(v => v < 10 ? "0" + v : v)
+                    .join(":");
+                
+                setTimer(formatted);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [connectedDevice, startTime]);
 
     // scan and connect logic (handles button press => scan, stop scanning, disconnect)
 
@@ -238,6 +277,9 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 isNewSession.current = true;
                 stepDetector.reset(); // clear step count and cadence for next connection
 
+                // setStartTime(null);
+                // setTimer("00:00:00");
+
                 if(locationRef.current) {
 
                     locationRef.current.remove();
@@ -246,7 +288,8 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 }
 
                 console.log("Manually Disconnected");
-                computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
+                await computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
+                await computeSessionAverages();
             } catch (e: any) {
                 console.error("Disconnect error:", e.message);
             } finally {
@@ -281,11 +324,15 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
             setConnectedDevice(connected);
 
+            setStartTime(Date.now());
+
             const sub = manager.onDeviceDisconnected(connected.id, (error, device) => {
                 if (isManualDisconnect.current) {
                     return;
                 }
                 console.log("Device disconnected unexpectedly");
+                computePressureAverages();
+                computeSessionAverages();
                 setConnectedDevice(null);
                 setIsScanning(false);
                 setIsConnecting(false);
@@ -302,6 +349,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 resetFile(accel_file)
                 resetFile(pressure_file);
                 resetFile(gyro_file);
+                resetFile(metrics_file);
                 isNewSession.current = false;
             }
             
@@ -397,11 +445,16 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                             appendFile(pressure_file, formatted + "\n"); // store to file
 
                             const result = stepDetector.update(parseFloat(parts[0]), parseFloat(parts[1]), parseFloat(parts[2]), Date.now());
+                            
+                            const metricLine = `${result.cadence},${result.strideLength},${result.speed},${result.pace}\n`;
+                            appendFile(metrics_file, metricLine);
+                            
                             setStepCount(result.stepCount);
                             setCadence(result.cadence);
                             setStrideLength(result.strideLength);
                             setSpeed(result.speed);
                             setPace(result.pace);
+                            setDistance(result.distance);
                         }
                     }
                 }
@@ -477,6 +530,46 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         }
     };
 
+    const computeSessionAverages = async () => {
+        try {
+            const fileInfo = await FileSystem.getInfoAsync(metrics_file);
+            if (!fileInfo.exists) return;
+
+            const content = await FileSystem.readAsStringAsync(metrics_file);
+            const lines = content.trim().split("\n");
+            if (lines.length === 0) return;
+
+            let sums = { cadence: 0, stride: 0, speed: 0, pace: 0 };
+            let count = 0;
+
+            lines.forEach(line => {
+                const [cad, stri, spd, pac] = line.split(",").map(Number);
+                
+                // only average data points where the user was actually moving
+                // this prevents the average speed/cadence from dropping while standing still
+                if (cad > 0 && !isNaN(cad) && isFinite(pac) && pac > 0) { 
+                    sums.cadence += cad;
+                    sums.stride += stri;
+                    sums.speed += spd;
+                    sums.pace += pac;
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                // final session averages
+                setCadence(Math.round(sums.cadence / count));
+                setStrideLength(Number((sums.stride / count).toFixed(2)));
+                setSpeed(Number((sums.speed / count).toFixed(2)));
+                setPace(Number((sums.pace / count).toFixed(2)));
+                                
+                console.log(`Session Summary: ${count} data points averaged.`);
+            }
+        } catch (e) {
+            console.log("Error computing session averages:", e);
+        }
+    };
+
     // update button text based on state
     const getButtonTitle = () => {
         if (connectedDevice) return "Disconnect";
@@ -496,13 +589,19 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     color={connectedDevice ? "#FF3B30" : "#007AFF"}
                 />
             </View>
-            <View style={{ height: 65, width: 200, alignItems: 'center' }}>
-            {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12}}>{error}</Text>}
-            {connectedDevice && (
-                <Text style={{color: 'white', fontSize: 12}}>
-                    Connected to {connectedDevice.name}
-                </Text>
+            <View style={{ height: 80, width: 260, alignItems: 'center' }}>
+            {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
+            
+            {!error && (
+                <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>
+                {connectedDevice ? (
+                    <> Connected to {connectedDevice.name} {"\n"} Press to end session and view average stats </>
+                ) : (
+                    <> Not connected {"\n"} Press to begin new session and view live stats </>
+                )}
+            </Text>
             )}
+            
             {/* {pressure !== null && (
                 <Text style={{color: 'white', fontSize: 12, marginBottom: 5}}>
                     Pressure: {pressure}
