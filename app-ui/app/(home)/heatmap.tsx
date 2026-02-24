@@ -26,8 +26,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
 
   // convert each region
   const toeColor = getColor(averages[0]);
-  const archColor = getColor(averages[1]);
-  const heelColor = getColor(averages[2]);
+  const sideColor = getColor(averages[2]);
+  const heelColor = getColor(averages[1]);
 
   // svg path (mask heatmap, draw outline)
   const footPaths = [
@@ -70,12 +70,12 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
       <Defs>
         <RadialGradient id="heelGradient" cx="50%" cy="50%" r="75%">
           <Stop offset="0%" stopColor={heelColor} stopOpacity="1" />
-          <Stop offset="100%" stopColor={archColor} stopOpacity="0"  />
+          <Stop offset="100%" stopColor={heelColor} stopOpacity="0"  />
         </RadialGradient>
 
         <RadialGradient id="archGradient"cx="50%" cy="50%" r="75%">
-          <Stop offset="0%" stopColor={archColor} stopOpacity="1" />
-          <Stop offset="100%" stopColor={archColor} stopOpacity="0"  />
+          <Stop offset="0%" stopColor={sideColor} stopOpacity="1" />
+          <Stop offset="100%" stopColor={sideColor} stopOpacity="0"  />
         </RadialGradient>
 
         <RadialGradient id="toeGradient" cx="50%" cy="50%" r="75%">
@@ -113,7 +113,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         <Circle
           cx={270}
           cy={440}
-          r={90}
+          r={80}
           fill="url(#heelGradient)"
         />
 
@@ -121,7 +121,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         <Circle
           cx={300}
           cy={200}
-          r={90}
+          r={80}
           fill="url(#archGradient)"
         />
 
@@ -129,7 +129,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
         <Circle
           cx={180}
           cy={200}
-          r={90}
+          r={80}
           fill="url(#toeGradient)"
         />
       </G>

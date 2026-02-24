@@ -13,8 +13,9 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
+    "@react-navigation/drawer": "^7.8.1",
     "@react-navigation/elements": "^2.6.3",
-    "@react-navigation/native": "^7.1.8",
+    "@react-navigation/native": "^7.1.28",
     "expo": "~54.0.20",
     "expo-constants": "~18.0.10",
     "expo-dev-client": "~6.0.17",
@@ -26,6 +27,7 @@
     "expo-linking": "~8.0.8",
     "expo-location": "~19.0.8",
     "expo-router": "~6.0.14",
+    "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "expo-symbols": "~1.0.7",
@@ -48,7 +50,7 @@
     "@svgr/cli": "^8.1.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
-    "eslint-config-expo": "~10.0.0",
+    "eslint-config-expo": "^10.0.0",
     "typescript": "~5.9.2"
   },
   "private": true

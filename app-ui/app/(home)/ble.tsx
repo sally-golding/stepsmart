@@ -25,13 +25,12 @@ const gyroValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z:
 // ble controller (scanning, connecting, monitoring characteristics)
 const manager = new BleManager();
 
-// file paths to store sensor data
+// file paths to store data
 const pressure_file: string = (FileSystem as any).documentDirectory + "pressure_data.txt";
 const accel_file: string = (FileSystem as any).documentDirectory + "accel_data.txt";
 const gyro_file: string = (FileSystem as any).documentDirectory + "gyro_data.txt";
-
-// cadence, stride length, speed, and pace
-const metrics_file: string = (FileSystem as any).documentDirectory + "metrics_data.txt";
+const metrics_file: string = (FileSystem as any).documentDirectory + "metrics_data.txt"; // cadence, stride length, speed, and pace
+const history_file: string = (FileSystem as any).documentDirectory + "sessions_history.json"; // store post session
 
 // clear file with a new connection
 async function resetFile(path: string) {
@@ -58,28 +57,32 @@ async function appendFile(path: string, text: string) {
     }
 }
 
-// used to determine strike type
-type PressureSample = {
-    t: number;
-    toe: number;
-    arch: number;
-    heel: number;
-};
+// save session
+async function saveSessionToHistory(sessionSummary: any) {
+    try {
+        const fileInfo = await FileSystem.getInfoAsync(history_file);
+        let history = [];
+        if (fileInfo.exists) {
+            const content = await FileSystem.readAsStringAsync(history_file);
+            history = JSON.parse(content);
+        }
+        history.push(sessionSummary);
+        await FileSystem.writeAsStringAsync(history_file, JSON.stringify(history), { encoding: "utf8" });
+        console.log("Session saved to history.");
+    } catch (e) {
+        console.error("Error saving history:", e);
+    }
+}
 
-let pressureBuffer: PressureSample[] = [];
-
+// ble location permissions
 export async function requestLocationPermission() {
   const { status } = await Location.requestForegroundPermissionsAsync();
 
   if (status !== 'granted') {
-
     console.log('Permission to access location was denied');
     return false;
-
   }
-
   return true;
-
 }
 
 // ble permissions: scan, connect, location (android)
@@ -113,8 +116,10 @@ export async function requestBlePermissions() {
   return true;
 }
 
-export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, setSpeed, setPace, setDistance, setTimer, onConnect, }: BLEButtonProps) {
-    // device and uuids
+export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, 
+    setSpeed, setPace, setDistance, setTimer, onConnect, }: BLEButtonProps) {
+    
+        // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
 
@@ -132,7 +137,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
     // timer
     const [startTime, setStartTime] = useState<number | null>(null);
-    const [now, setNow] = useState<number | null>(null);
+    const currentTimerRef = useRef("00:00:00");
 
     // const sessionData = useRef({
     //     cadenceSum: 0,
@@ -148,15 +153,14 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     
     // step detector instance *resets if component re-renders* (not to happen if device disconnected unexpectedly)
     // *hard-coded height for testing*
-    const heightFeet = 5;
-    const heightInches = 6;
+    // const heightFeet = 5;
+    // const heightInches = 6;
     const locationRef = useRef<Location.LocationSubscription | null>(null);
     const stepDetectorRef = useRef<StepDetector | null>(null);
     if (!stepDetectorRef.current) {
-        stepDetectorRef.current = new StepDetector(heightFeet, heightInches);
+        stepDetectorRef.current = new StepDetector();
     }
     const stepDetector = stepDetectorRef.current;
-
     const isNewSession = useRef(true);
 
     useEffect(() => {
@@ -167,11 +171,12 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 const hrs = Math.floor(totalSeconds / 3600);
                 const mins = Math.floor((totalSeconds % 3600) / 60);
                 const secs = totalSeconds % 60;
+                const formatted = [hrs, mins, secs].map(v => v < 10 ? "0" + v : v).join(":");
                 
-                const formatted = [hrs, mins, secs]
-                    .map(v => v < 10 ? "0" + v : v)
-                    .join(":");
+                // CRITICAL FIX: Update the Ref so handleEndSessionProcessing can see it
+                currentTimerRef.current = formatted; 
                 
+                // Update the UI
                 setTimer(formatted);
             }, 1000);
         }
@@ -225,7 +230,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             manager.stopDeviceScan();
             setIsScanning(false);
             setError("Device not found");
-        }, 10000);
+        }, 20000);
 
         // start scan
         console.log("Starting scan for", DEVICE_NAME);
@@ -270,6 +275,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 disconnectSub?.();
                 setDisconnectSub(null);
 
+                await handleEndSessionProcessing();
                 await connectedDevice.cancelConnection();
                 setConnectedDevice(null);
                 setError("");
@@ -280,16 +286,14 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 // setStartTime(null);
                 // setTimer("00:00:00");
 
-                if(locationRef.current) {
-
+                if (locationRef.current) {
                     locationRef.current.remove();
                     locationRef.current = null;
-
                 }
 
                 console.log("Manually Disconnected");
-                await computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
-                await computeSessionAverages();
+                //await computePressureAverages(); // compute pressure averages after data collection/ (not real-time)
+                //await computeSessionAverages();
             } catch (e: any) {
                 console.error("Disconnect error:", e.message);
             } finally {
@@ -298,12 +302,40 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         }
     };
 
+    const handleEndSessionProcessing = async () => {
+        const pressureAvgs = await computePressureAverages();
+        const metricAvgs = await computeSessionAverages();
+
+        const sessionSummary = {
+            id: Date.now().toString(),
+            date: new Date().toLocaleString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            duration: currentTimerRef.current,
+            steps: metricAvgs?.steps,
+            distance: metricAvgs?.distance,
+            cadence: metricAvgs?.cadence,
+            pace: metricAvgs?.pace || 0,
+            speed: metricAvgs?.speed || 0,
+            strideLength: metricAvgs?.stride || 0,
+            pressure: pressureAvgs || [0, 0, 0]
+        };
+        console.log("FINAL METRICS CHECK:", metricAvgs);
+        await saveSessionToHistory(sessionSummary);
+    }
+
     // button behavior (disconnect if connected, stop scan if scanning, start scan otherwise)
     const handleButtonPress = () => {
+        // if (connectedDevice) {
+        //     disconnect();
+        // } else if (isScanning) {
+        //     stopScanning();
+        // } else {
+        //     scanDevices();
+        // }
         if (connectedDevice) {
             disconnect();
-        } else if (isScanning) {
-            stopScanning();
+        } else if (isScanning || isConnecting) {
+            return;
         } else {
             scanDevices();
         }
@@ -331,8 +363,9 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     return;
                 }
                 console.log("Device disconnected unexpectedly");
-                computePressureAverages();
-                computeSessionAverages();
+                //computePressureAverages();
+                //computeSessionAverages();
+                handleEndSessionProcessing();
                 setConnectedDevice(null);
                 setIsScanning(false);
                 setIsConnecting(false);
@@ -346,10 +379,10 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
             // clear files
             if (isNewSession.current) {
-                resetFile(accel_file)
-                resetFile(pressure_file);
-                resetFile(gyro_file);
-                resetFile(metrics_file);
+                await resetFile(accel_file)
+                await resetFile(pressure_file);
+                await resetFile(gyro_file);
+                await resetFile(metrics_file);
                 isNewSession.current = false;
             }
             
@@ -434,7 +467,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                         // multiple pressure values per packet => split
                         const raw = decode(characteristic.value);
                         const parts = raw.split(",").map(p => p.trim());
-                        //console.log("Pressure sensors:", raw); // *for debugging*
+                        console.log("Pressure sensors:", raw); // *for debugging*
 
                         //const first = parseFloat(parts[0]);
                         //const formatted = `${parts[0]}, ${parts[1]}, ${parts[2]}`;
@@ -446,9 +479,10 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
                             const result = stepDetector.update(parseFloat(parts[0]), parseFloat(parts[1]), parseFloat(parts[2]), Date.now());
                             
-                            const metricLine = `${result.cadence},${result.strideLength},${result.speed},${result.pace}\n`;
+                            const metricLine = `${result.cadence},${result.strideLength},${result.speed},${result.pace},${result.stepCount},${result.distance}\n`;
                             appendFile(metrics_file, metricLine);
                             
+                            // live ui updates
                             setStepCount(result.stepCount);
                             setCadence(result.cadence);
                             setStrideLength(result.strideLength);
@@ -501,6 +535,9 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const computePressureAverages = async () => {
         try {
             // read file, sum each sensor, compute mean
+            const fileInfo = await FileSystem.getInfoAsync(pressure_file);
+            if (!fileInfo.exists) return;
+
             const content = await FileSystem.readAsStringAsync(pressure_file);
             const lines = content.trim().split("\n");
             if (lines.length === 0) return;
@@ -520,63 +557,88 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             });
 
             if (count > 0) {
-                const avg = sums.map(s => s / count);
-                const avgRounded = avg.map(a => Math.round(a));
-                console.log("Calculated Averages:", avgRounded);
+                const avg = sums.map(s => Math.round(s / count));
+                console.log("Calculated Pressure Averages:", avg);
                 if (setPressureAverages) setPressureAverages(avg);
+                return avg;
             }
         } catch (e) {
             console.log("Error computing averages:", e);
+            return null;
         }
     };
 
     const computeSessionAverages = async () => {
         try {
             const fileInfo = await FileSystem.getInfoAsync(metrics_file);
-            if (!fileInfo.exists) return;
+            if (!fileInfo.exists) return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
 
             const content = await FileSystem.readAsStringAsync(metrics_file);
             const lines = content.trim().split("\n");
-            if (lines.length === 0) return;
+            if (lines.length === 0) return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
 
             let sums = { cadence: 0, stride: 0, speed: 0, pace: 0 };
             let count = 0;
 
             lines.forEach(line => {
-                const [cad, stri, spd, pac] = line.split(",").map(Number);
+                const parts = line.split(",").map(Number);
                 
                 // only average data points where the user was actually moving
                 // this prevents the average speed/cadence from dropping while standing still
-                if (cad > 0 && !isNaN(cad) && isFinite(pac) && pac > 0) { 
-                    sums.cadence += cad;
-                    sums.stride += stri;
-                    sums.speed += spd;
-                    sums.pace += pac;
+                if (parts.length >= 4 && parts[0] >= 0) {
+                    sums.cadence += parts[0];
+                    sums.stride += parts[1];
+                    sums.speed += parts[2];
+                    sums.pace += parts[3];
                     count++;
                 }
             });
 
+            const lastLine = lines[lines.length - 1].split(",").map(Number);
+
             if (count > 0) {
+                const totalSteps = lastLine[4] || 0;    // Index 4 is stepCount
+                const totalDistance = lastLine[5] || 0; // Index 5 is distance
+
+                const results = {
+                    cadence: Math.round(sums.cadence / count),
+                    stride: Number((sums.stride / count).toFixed(2)),
+                    speed: Number((sums.speed / count).toFixed(2)),
+                    pace: Number((sums.pace / count).toFixed(2)),
+                    steps: totalSteps,
+                    distance: totalDistance
+                }
                 // final session averages
                 setCadence(Math.round(sums.cadence / count));
                 setStrideLength(Number((sums.stride / count).toFixed(2)));
                 setSpeed(Number((sums.speed / count).toFixed(2)));
                 setPace(Number((sums.pace / count).toFixed(2)));
-                                
-                console.log(`Session Summary: ${count} data points averaged.`);
+
+                return results;
             }
         } catch (e) {
             console.log("Error computing session averages:", e);
+            return null;
         }
     };
 
     // update button text based on state
     const getButtonTitle = () => {
-        if (connectedDevice) return "Disconnect";
-        if (isConnecting) return "Connecting";
-        if (isScanning) return "Stop Scanning";
-        if (error == "Device disconnected") return "Reconnect";
-        return "Scan for StepSmart";
+        if (connectedDevice) return "STOP RUN";
+        //if (isConnecting) return "Connecting";
+        //if (isScanning) return "Stop Scanning";
+        //if (error == "Device disconnected") return "Reconnect";
+        return "START RUN";
+    };
+
+    const getSubText = () => {
+        if (isConnecting || isScanning) return "Connecting...";
+        
+        if (connectedDevice) {
+            return `Connected to ${connectedDevice.name}\nPress to end session and view average stats`;
+        }
+        
+        return "Not connected\nPress to begin new session and view live stats";
     };
 
     // ui render (button, messages, live pressure reading)
@@ -590,17 +652,22 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 />
             </View>
             <View style={{ height: 80, width: 260, alignItems: 'center' }}>
-            {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
+                {error ? (
+                    <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>
+                ) : (
+                    <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>{getSubText()}</Text>
+                )}
+            {/* {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
             
             {!error && (
                 <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>
                 {connectedDevice ? (
-                    <> Connected to {connectedDevice.name} {"\n"} Press to end session and view average stats </>
+                    <> Connected to StepSmart {"\n"} Press to end session and view average stats {"\n"} </>
                 ) : (
                     <> Not connected {"\n"} Press to begin new session and view live stats </>
                 )}
             </Text>
-            )}
+            )} */}
             
             {/* {pressure !== null && (
                 <Text style={{color: 'white', fontSize: 12, marginBottom: 5}}>

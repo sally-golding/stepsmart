@@ -29,13 +29,13 @@ export class StepDetector {
     private readyForStep = true;
 
     // height in meters
-    private height: number;
+    //private height: number;
 
-    // pass in user height, convert to meters for calculations
-    constructor(feet: number, inches: number) {
-        const heightInches = feet * 12 + inches;
-        this.height = heightInches * 0.0254;
-    }
+    // pass in user height, convert to meters for calculations (not used anymore)
+    // constructor(feet: number, inches: number) {
+    //     const heightInches = feet * 12 + inches;
+    //     this.height = heightInches * 0.0254;
+    // }
 
     public setSpeed(gpsSpeed: number | null) {
 
@@ -57,9 +57,9 @@ export class StepDetector {
         
         // calculate step count
 
-        if (pressure_sensor1 <= 400 || pressure_sensor2 <= 400 || pressure_sensor3 <= 400) {
+        if (pressure_sensor1 <= 990 || pressure_sensor2 <= 990 || pressure_sensor3 <= 990) {
 
-            if(!this.isGrounded) {
+            if(!this.isGrounded && (timestamp - this.lastStepTime > 250)) {
 
                 this.isGrounded = true;
                 this.stepCount += 2;
@@ -68,7 +68,7 @@ export class StepDetector {
                 this.stepTimes.push(timestamp);
             }     
 
-       } else if (pressure_sensor1 > 400 && pressure_sensor2 > 400 && pressure_sensor3 > 400) {
+       } else if (pressure_sensor1 > 990 && pressure_sensor2 > 990 && pressure_sensor3 > 990) {
 
             this.isGrounded = false;
 
@@ -141,6 +141,14 @@ export class StepDetector {
             pace: Number(pace.toFixed(2)),
             distance: Number(distanceMiles.toFixed(2)),
         };
+    }
+
+    public getStepCount(): number {
+        return this.stepCount;
+    }
+
+    public getDistance(): number {
+        return Number((this.distanceMeters * 0.000621371).toFixed(2));
     }
 
     // reset values

@@ -1,237 +1,309 @@
-import { StyleSheet, Text, View } from "react-native";
-import BLEButton from "./ble";
-import React, { useState, useEffect } from "react";
-import Heatmap from "./heatmap";
+import { StyleSheet, View, Text, TextInput, Button, Alert, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useRouter, Stack } from "expo-router";
+
+type UserProfile = {
+  username: string;
+  passwordHash: string;
+  name: string;
+  dob: string; // ISO date string
+  heightFt: number;
+  heightIn: number;
+  weightLb: number;
+};
 
 export default function Index() {
-  const [averages, setAverages] = useState<number[] | null>(null); // pressure sensor averages
-  const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null); // accel data
-  const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null); // gyro data
-  // step metrics
-  const [stepCount, setStepCount] = useState<number>(0);
-  const [cadence, setCadence] = useState<number>(0);
-  const [strideLength, setStrideLength] = useState<number>(0);
-  const [speed, setSpeed] = useState<number>(0);
-  const [pace, setPace] = useState<number>(0);
-  const [distance, setDistance] = useState<number>(0);
-  const [timer, setTimer] = useState<string>("00:00:00");
 
-  const handleNewSession = () => {
-    setAverages(null); // only render heatmap post session, do not maintain previous heatmap during a new session
-    setStepCount(0);
-    setCadence(0);
-    setStrideLength(0);
-    setSpeed(0);
-    setPace(0);
-    setTimer("00:00:00");
+  useEffect(() => {
+    console.log("ROOT index.tsx mounted");
+  }, []);
+
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [name, setName] = useState("");
+  const [dob, setDob] = useState(""); // yyyy-mm-dd
+  const [heightFt, setHeightFt] = useState("");
+  const [heightIn, setHeightIn] = useState("");
+  const [weightLb, setWeightLb] = useState("");
+
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+
+  // clear session
+  useEffect(() => {
+    const clearSession = async () => {
+      await SecureStore.deleteItemAsync("currentUser");
+    };
+    clearSession();
+  }, []);
+
+  const handleSubmit = async () => {
+    setErrorMessage("");
+
+    // get current users
+    const rawUsers = await SecureStore.getItemAsync("allUsers");
+    const usersList: UserProfile[] = rawUsers ? JSON.parse(rawUsers) : [];
+
+    if (activeTab === "login") {
+      // login
+      const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
+      const hashed = await hashPassword(password);
+
+      if (!user) {
+        setErrorMessage("No account found");
+        return;
+      }
+
+      if (user.passwordHash !== hashed) {
+        setErrorMessage("Invalid password");
+        return;
+      }
+
+      await SecureStore.setItemAsync("currentUser", JSON.stringify(user));
+      router.replace("/(home)/home");
+
+    } else {
+      // sign up
+
+      // all fields must be filled
+      if (!username || !password || !name || !dob || !heightFt || !heightIn || !weightLb) {
+        setErrorMessage("Please fill out all fields");
+        return;
+      }
+
+      // see if user/account exists
+      const userExists = usersList.some(u => u.username.toLowerCase() === username.toLowerCase());
+    
+      if (userExists) {
+        setErrorMessage("Username is taken");
+        return;
+      }
+
+      const profile: UserProfile = {
+        username,
+        passwordHash: await hashPassword(password),
+        name,
+        dob,
+        heightFt: parseInt(heightFt),
+        heightIn: parseInt(heightIn),
+        weightLb: parseInt(weightLb),
+      };
+
+      await SecureStore.setItemAsync("allUsers", JSON.stringify([...usersList, profile]));
+      await SecureStore.setItemAsync("userProfile", JSON.stringify(profile));
+
+      const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
+      await SecureStore.setItemAsync("currentUser", JSON.stringify(user));
+
+      router.replace("/(home)/home");
+
+    }
   };
 
-  const formatPace = (decimalPace: number | null) => {
-    if (!decimalPace || decimalPace === 0) return "0:00";
-    const mins = Math.floor(decimalPace);
-    const secs = Math.round((decimalPace - mins) * 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const hashPassword = async (pw: string) => {
+    let hash = 0;
+    for (let i = 0; i < pw.length; i++) {
+      hash = (hash << 5) - hash + pw.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash.toString();
   };
 
+  // ui
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
+        <View style={{ height: 35 }} />
 
-      <View style={styles.buttonBox}>
-        <BLEButton // ble button, pass setter functions
-          setPressureAverages={setAverages}
-          setAccelAverages={setAccelAverages} 
-          setGyroAverages={setGyroAverages}    
-          setStepCount={setStepCount}
-          setCadence={setCadence} 
-          setStrideLength={setStrideLength}
-          setSpeed={setSpeed}
-          setPace={setPace}
-          setDistance={setDistance}
-          setTimer={setTimer}
-          onConnect={handleNewSession}
-        />
-      </View>
+        <Text style={styles.title}>StepSmart</Text>
 
-      <View style={{ height: 10 }} />
+          {/* <Text style={styles.title}>
+            {hasProfile ? "Log In" : "Create An Account"}
+          </Text> */}
+          <View style={{ height: 8 }} />
 
-      <View style={styles.strideGaitBox}>
-        {stepCount !== null && cadence !== null && speed !== null && pace != null && distance != null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
-          <>
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Time:</Text> {timer}
-            </Text>
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Distance:</Text> {distance?.toFixed(2)} miles
-            </Text>
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Step Count:</Text> {stepCount}
-            </Text>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === "login" && styles.activeTab]} 
+              onPress={() => { setActiveTab("login"); setErrorMessage(""); }}
+            >
+              <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Log In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === "signup" && styles.activeTab]} 
+              onPress={() => { setActiveTab("signup"); setErrorMessage(""); }}
+            >
+              <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+     
+          <Text style={styles.label}>Username</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              value={username}
+              onChangeText={setUsername}
+            />
 
-            {/* <Text style={[styles.analysisText, {fontWeight: "bold"}]}>
-              {averages ? "Average Stats " : "Live Stats: "}
-            </Text> */}
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Speed:</Text> {(speed).toFixed(2)} mph
-            </Text>
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Pace:</Text> {formatPace(pace)}/mile
-            </Text>
-            
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Cadence:</Text> {Math.round(cadence)} steps/min
-            </Text>
-            <Text style={styles.analysisText}>
-              <Text style={{ fontWeight: "bold" }}>Stride Length:</Text> {strideLength} m
-            </Text>
-          </>
-        ) : (
-           <Text style={styles.placeholderText}>Stride & Gait Analysis</Text>
-        )}
+          {activeTab === "signup" && (
+            <>
+            <Text style={styles.label}>Name </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              placeholderTextColor="#949494"
+              value={name}
+              onChangeText={setName}
+            />
 
-        {/* {accelAverages && gyroAverages ? (
-          <>
-            <Text style={styles.analysisText}>
-              Accelerometer: x = {accelAverages.x.toFixed(2)}, y = {accelAverages.y.toFixed(2)}, z = {accelAverages.z.toFixed(2)}
-            </Text>
-            <Text style={styles.analysisText}>
-              Gyroscope: x = {gyroAverages.x.toFixed(2)}, y = {gyroAverages.y.toFixed(2)}, z = {gyroAverages.z.toFixed(2)}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.placeholderText}>Accel & Gyro Data</Text>
-        )} */}
+            <Text style={styles.label}>Date of Birth</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="MMDDYYY"
+              placeholderTextColor="#949494"
+              keyboardType="numeric"
+              value={dob}
+              maxLength={10}
+              onChangeText={setDob}
+            />
 
-      </View>
+            <Text style={styles.label}>Height</Text>
+            <View style={styles.row}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginRight: 5 }]}
+                placeholder="ft"
+                placeholderTextColor="#949494"
+                keyboardType="numeric"
+                value={heightFt}
+                onChangeText={setHeightFt}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1, marginLeft: 5 }]}
+                placeholder="in"
+                placeholderTextColor="#949494"
+                keyboardType="numeric"
+                value={heightIn}
+                onChangeText={setHeightIn}
+                />
+            </View>
 
-      <View style={{ height: 10 }} />
+            <Text style={styles.label}>Weight</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="lb"
+              placeholderTextColor="#949494"
+              keyboardType="numeric"
+              value={weightLb}
+              onChangeText={setWeightLb}
+            />
+            </>
+          )}
 
-      <View style={styles.heatmapBox}>
-        {averages && averages.length === 3 ? ( // render and display heatmap when data is valid
-          <Heatmap averages={averages} />
-        ) : (
-          <Text style={styles.placeholderText}>Heatmap</Text>
-        )}
-      </View>
+          <View style={styles.button}>
+            <Button
+              title={activeTab === "login" ? "Log In" : "Create Account"} 
+              onPress={handleSubmit}
+              color="#007AFF" 
+            />
+          </View>
 
-      <View style={{ height: 10 }} />
+          <View style={{ height: 50}}>
+            {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
+          </View>
 
-      <View style={styles.insightsBox}>
-        {averages && averages.length === 3 ? (
-          (() => {
-            const [toe, arch, heel] = averages;
-            // most pressure (inverted)
-            let mostPressureRegion = "unknown";
-            const maxPressure = Math.min(toe, arch, heel);
-            if (maxPressure === toe) mostPressureRegion = "toe";
-            if (maxPressure === arch) mostPressureRegion = "little toe";
-            if (maxPressure === heel) mostPressureRegion = "big toe";
-            //if (toe === arch && toe === heel && arch === heel) mostPressureRegion = "NA"
-
-            // strike type
-            let strikeType = "Unknown";
-            if (heel < toe) strikeType = "Heel Strike";
-            else if (toe < heel) strikeType = "Left Forefoot Strike";
-            else if (arch < heel && arch < toe) strikeType = "Right Forefoot Strike";
-            else strikeType = "Even"
-
-            // insights
-            let insights = "";
-            if (strikeType === "Heel Strike") insights = "Try increasing your cadence and avoid overstriding so your foot lands closer beneath your hips."
-            if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") 
-              insights = "Focus on landing your foot beneath your hips to reduce understriding."
-            
-            return (
-              <View>
-                {/* <Text style={styles.analysisText}>
-                  Most pressure is detected on the {mostPressureRegion}
-                </Text> */}
-                <Text style={styles.analysisText}>
-                  <Text style={{ fontWeight: "bold" }}>Estimated Strike Type:</Text> {strikeType}
-                </Text>
-                <Text style={styles.analysisText}>
-                  {insights}
-                </Text>
-              </View>
-            );
-          })()
-      ) : (
-        <Text style={styles.placeholderText}>Insights</Text>
-      )}
-      </View>
-    </View>
+        </View>
+      </ScrollView>
   );
 }
 
-// stylesheet (css)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#1c1c1e",
+    padding: 20,
+    justifyContent: "flex-start",
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 30,
+    color: "#fff",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "#3a3a3c",
+    borderRadius: 5,
+    padding: 4,
+    marginBottom: 25,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeTab: {
+    backgroundColor: "#6366f1",
+    borderRadius: 5,
+  },
+  tabText: {
+    color: "#8e8e93",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  activeTabText: {
     color: "#fff",
   },
-  text: {
+  label: {
     color: "#fff",
-    fontSize: 16,
+    marginTop: 10,
+    marginBottom: 5,
   },
-  analysisText: {
+  input: {
+    backgroundColor: "#3a3a3c",
     color: "#fff",
-    fontSize: 14,
-    marginVertical: 2,
-    textAlign: "center", 
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 5,
   },
-  strideGaitBox: {
-    width: "90%",
-    height: 205,
-    backgroundColor: "#3a3a3c",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
+  button: {
+    marginTop: 35,
+    color: "#007AFF"
   },
-  heatmapBox: {
-    width: "90%",
-    height: 255,
-    backgroundColor: "#3a3a3c",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-    overflow: "hidden",
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: 25,
   },
-  insightsBox: {
-    width: "90%",
-    height: 90,
-    // backgroundColor: "#e6e6e6",
-    backgroundColor: "#3a3a3c",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  buttonBox: {
-    width: "45%",
-    height: 45,
-    // backgroundColor: "#e6e6e6",
-    backgroundColor: "#1c1c1e",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#1c1c1e",
-  },
-  placeholderText: {
-    color: "#ffffffc4",
-    fontSize: 14,
+  row: {
+    flexDirection: "row",
   },
 });
+
+export const options = {
+  headerShown: false, 
+  drawerItemStyle: { height: 0 }, 
+};
