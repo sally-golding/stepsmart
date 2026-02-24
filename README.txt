@@ -48,6 +48,13 @@ Alpha Build Outlined Work:
 - Researched which stride and gait features to implement and how
 - Designed new Arduino code to account for feedback LED functionality
 
+Beta Build Outlined Work:
+- Implemented GPS
+- Integrated PCB and new battery
+- Added an LED for detection of device connection for usability
+- App: added side menu, account creation and login, view past runs, view user profile
+- New 3-D enclosure
+
 Current Bugs:
 - Funky numbers from gyroscope values, will need to add a calibration detail to the code
 - Lack of proper packet validation in current build; application assumes valid BLE data
