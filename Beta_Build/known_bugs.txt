@@ -7,3 +7,4 @@ StepSmart Known Bugs & Limitations
 5. Automatic reconnection is not supported if BLE connection is lost or interrupted.
 6. Step count is not always accurate.
 7. Application is not a standalone mobile app; the development server must be started from a terminal before connecting a mobile device.
+8. Start Run button changes color when menu is opened during session.
