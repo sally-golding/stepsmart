@@ -57,22 +57,46 @@ export class StepDetector {
         
         // calculate step count
 
-        if (pressure_sensor1 <= 990 || pressure_sensor2 <= 990 || pressure_sensor3 <= 990) {
+        if (pressure_sensor1 <= 600 || pressure_sensor2 <= 600 || pressure_sensor3 <= 600) {
 
-            if(!this.isGrounded && (timestamp - this.lastStepTime > 250)) {
+            if(!this.isGrounded && (timestamp - this.lastStepTime > 700)) {
 
                 this.isGrounded = true;
                 this.stepCount += 2;
 
                 this.lastStepTime = timestamp;
                 this.stepTimes.push(timestamp);
+                console.log("++++++++++++++++++++++++++++++");
             }     
 
-       } else if (pressure_sensor1 > 990 && pressure_sensor2 > 990 && pressure_sensor3 > 990) {
+       }
+       if (pressure_sensor1 > 600 && pressure_sensor2 > 600 && pressure_sensor3 > 600) {
 
             this.isGrounded = false;
+            //console.log("not grounded");
 
         }
+
+        // const contact =
+        // pressure_sensor1 <= 800 ||
+        // pressure_sensor2 <= 800 ||
+        // pressure_sensor3 <= 800;
+
+        // if (contact && !this.isGrounded && timestamp - this.lastStepTime > 200) {
+        //     this.stepCount += 2;
+        //     this.lastStepTime = timestamp;
+        //     this.stepTimes.push(timestamp);
+        //     this.isGrounded = true;
+        // }
+
+        // const unloadedCount =
+        // (pressure_sensor1 > 800 ? 1 : 0) +
+        // (pressure_sensor2 > 800 ? 1 : 0) +
+        // (pressure_sensor3 > 800 ? 1 : 0);
+
+        // if (unloadedCount >= 2) {
+        //     this.isGrounded = false;
+        // }
 
         // calculate cadence
         this.stepTimes = this.stepTimes.filter(t => timestamp - t <= 10000);

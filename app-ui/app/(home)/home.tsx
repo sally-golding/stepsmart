@@ -24,6 +24,7 @@ export default function Index() {
 
   // session
   const [averages, setAverages] = useState<number[] | null>(null); // pressure sensor averages
+  //const [pressureWarning, setPressureWarning] = useState<string | null>(null);
   const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null); // accel data
   const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null); // gyro data
   // step metrics
@@ -67,6 +68,7 @@ export default function Index() {
       <View style={styles.buttonBox}>
         <BLEButton // ble button, pass setter functions
           setPressureAverages={setAverages}
+          //setPressureWarning={setPressureWarning}
           setAccelAverages={setAccelAverages} 
           setGyroAverages={setGyroAverages}    
           setStepCount={setStepCount}
@@ -135,6 +137,11 @@ export default function Index() {
       <View style={{ height: 8 }} />
 
       <View style={styles.heatmapBox}>
+        {/* {pressureWarning && (
+          <Text style={{ color: "red", fontSize: 12, fontWeight: "bold", textAlign: "center" }}>
+            {pressureWarning}
+          </Text>
+        )} */}
         {averages && averages.length === 3 ? ( // render and display heatmap when data is valid
           <Heatmap averages={averages} />
         ) : (
@@ -147,7 +154,7 @@ export default function Index() {
       <View style={styles.insightsBox}>
         {averages && averages.length === 3 ? (
           (() => {
-            const [toe, arch, heel] = averages;
+            const [toe, heel, arch] = averages;
             // most pressure (inverted)
             let mostPressureRegion = "unknown";
             const maxPressure = Math.min(toe, arch, heel);
@@ -224,7 +231,7 @@ const styles = StyleSheet.create({
   },
   analysisText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 13,
     marginVertical: 2,
     textAlign: "center", 
   },

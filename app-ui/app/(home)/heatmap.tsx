@@ -20,7 +20,23 @@ const Heatmap: React.FC<HeatmapProps> = ({ averages }) => {
     // intensity => hue
     // hue 0 = red (high pressure)
     // hue 60 = yellow (low pressure)
-    const hue = (1 - intensity) * 60; 
+    //const hue = (1 - intensity) * 60; 
+
+    let hue: number;
+
+  if (intensity < 0.1) {
+    // green -> yellow 
+    hue = 120 - (intensity / 0.1) * (120 - 60);
+  } else if (intensity < 0.4) {
+    // yellow -> orange
+    hue = 60 - ((intensity - 0.1) / 0.3) * (60 - 30);
+  } else if (intensity < 0.7) {
+    // orange -> red
+    hue = 30 - ((intensity - 0.4) / 0.3) * (30 - 0);
+  } else {
+    hue = 0; // full red
+  }
+
     return `hsl(${hue}, 100%, 50%)`;
   };
 

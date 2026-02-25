@@ -94,11 +94,14 @@ export default function Index() {
         weightLb: parseInt(weightLb),
       };
 
-      await SecureStore.setItemAsync("allUsers", JSON.stringify([...usersList, profile]));
+      const updatedUsersList = [...usersList, profile];
+      await SecureStore.setItemAsync("allUsers", JSON.stringify(updatedUsersList));
+
+      await SecureStore.setItemAsync("currentUser", JSON.stringify(profile));
       await SecureStore.setItemAsync("userProfile", JSON.stringify(profile));
 
-      const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
-      await SecureStore.setItemAsync("currentUser", JSON.stringify(user));
+      //const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
+      
 
       router.replace("/(home)/home");
 
@@ -177,7 +180,7 @@ export default function Index() {
               placeholderTextColor="#949494"
               keyboardType="numeric"
               value={dob}
-              maxLength={10}
+              maxLength={8}
               onChangeText={setDob}
             />
 

@@ -6,17 +6,18 @@ import * as Location from 'expo-location';
 import { StepDetector } from "./analysis"
 
 interface BLEButtonProps {
-  setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>; // array  for iteration (heatmap)
-  setAccelAverages: (values: { x: number; y: number; z: number }) => void;
-  setGyroAverages: (values: { x: number; y: number; z: number }) => void;
-  setStepCount: (steps: number) => void;
-  setCadence: (cadence: number) => void;
-  setStrideLength: (stride : number) => void;
-  setSpeed: (speed: number) => void;
-  setPace: (pace: number) => void;
-  setDistance: (pace: number) => void;
-  setTimer: (time: string) => void;
-  onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
+    setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>; // array  for iteration (heatmap)
+    //setPressureWarning?: React.Dispatch<React.SetStateAction<string | null>>;
+    setAccelAverages: (values: { x: number; y: number; z: number }) => void;
+    setGyroAverages: (values: { x: number; y: number; z: number }) => void;
+    setStepCount: (steps: number) => void;
+    setCadence: (cadence: number) => void;
+    setStrideLength: (stride : number) => void;
+    setSpeed: (speed: number) => void;
+    setPace: (pace: number) => void;
+    setDistance: (pace: number) => void;
+    setTimer: (time: string) => void;
+    onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
 }
 
 const accelValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
@@ -119,7 +120,7 @@ export async function requestBlePermissions() {
 export default function BLEButton({ setPressureAverages, setAccelAverages, setGyroAverages, setStepCount, setCadence, setStrideLength, 
     setSpeed, setPace, setDistance, setTimer, onConnect, }: BLEButtonProps) {
     
-        // device and uuids
+    // device and uuids
     const DEVICE_NAME = "StepSmart_Nano";
     const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
 
@@ -134,6 +135,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const [error, setError] = useState<string>("");
     const [disconnectSub, setDisconnectSub] = useState<(() => void) | null>(null);
     const isManualDisconnect = useRef(false);
+
 
     // timer
     const [startTime, setStartTime] = useState<number | null>(null);
@@ -163,6 +165,13 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
     const stepDetector = stepDetectorRef.current;
     const isNewSession = useRef(true);
 
+    // const stuckRefs = useRef({
+    //     prev: [null, null, null] as (number | null)[],
+    //     count: [0, 0, 0],
+    //     stuck: [false, false, false],
+    //     threshold: 200,
+    // });
+
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (connectedDevice && startTime) {
@@ -173,10 +182,8 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 const secs = totalSeconds % 60;
                 const formatted = [hrs, mins, secs].map(v => v < 10 ? "0" + v : v).join(":");
                 
-                // CRITICAL FIX: Update the Ref so handleEndSessionProcessing can see it
                 currentTimerRef.current = formatted; 
                 
-                // Update the UI
                 setTimer(formatted);
             }, 1000);
         }
@@ -224,7 +231,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
         manager.stopDeviceScan();
         setIsScanning(true);
 
-        // timeout after 15 seconds if device is not found
+        // timeout if device is not found
         const timeout = setTimeout(() => {
             console.log("TIMEOUT - Device not found");
             manager.stopDeviceScan();
@@ -275,7 +282,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 disconnectSub?.();
                 setDisconnectSub(null);
 
-                await handleEndSessionProcessing();
+                await handleEndSessionProcessing(); // compute pressure and metrics post session
                 await connectedDevice.cancelConnection();
                 setConnectedDevice(null);
                 setError("");
@@ -319,7 +326,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             strideLength: metricAvgs?.stride || 0,
             pressure: pressureAvgs || [0, 0, 0]
         };
-        console.log("FINAL METRICS CHECK:", metricAvgs);
+        console.log("FINAL METRICS:", metricAvgs);
         await saveSessionToHistory(sessionSummary);
     }
 
@@ -365,7 +372,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 console.log("Device disconnected unexpectedly");
                 //computePressureAverages();
                 //computeSessionAverages();
-                handleEndSessionProcessing();
+                handleEndSessionProcessing(); // compute pressure and metrics
                 setConnectedDevice(null);
                 setIsScanning(false);
                 setIsConnecting(false);
@@ -379,9 +386,9 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
             // clear files
             if (isNewSession.current) {
-                await resetFile(accel_file)
+                //await resetFile(accel_file)
                 await resetFile(pressure_file);
-                await resetFile(gyro_file);
+                //await resetFile(gyro_file);
                 await resetFile(metrics_file);
                 isNewSession.current = false;
             }
@@ -423,36 +430,36 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
 
 
             // accelerometer monitoring
-            connected.monitorCharacteristicForService(
-                SERVICE_UUID,
-                ACCEL_UUID,
-                (error, characteristic) => {
-                    if (error) {
-                        console.error("Accelerometer monitor error:", error);
-                        return;
-                    }
+            // connected.monitorCharacteristicForService(
+            //     SERVICE_UUID,
+            //     ACCEL_UUID,
+            //     (error, characteristic) => {
+            //         if (error) {
+            //             console.error("Accelerometer monitor error:", error);
+            //             return;
+            //         }
 
-                    if (characteristic?.value) {
-                        // decode ble data into numeric values
-                        const raw = atob(characteristic.value);
-                        const [x, y, z] = raw.split(",").map(Number);
+            //         if (characteristic?.value) {
+            //             // decode ble data into numeric values
+            //             const raw = atob(characteristic.value);
+            //             const [x, y, z] = raw.split(",").map(Number);
 
-                        // store raw data
-                        accelValues.x.push(x);
-                        accelValues.y.push(y);
-                        accelValues.z.push(z);
+            //             // store raw data
+            //             accelValues.x.push(x);
+            //             accelValues.y.push(y);
+            //             accelValues.z.push(z);
 
-                        // compute and set averages *double check*
-                        const avgX = accelValues.x.reduce((a, b) => a + b, 0) / accelValues.x.length;
-                        const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
-                        const avgZ = accelValues.z.reduce((a, b) => a + b, 0) / accelValues.z.length;
-                        setAccelAverages({ x: avgX, y: avgY, z: avgZ });
-                        //setAccelAverages({ x: x, y: y, z: z });
+            //             // compute and set averages *double check*
+            //             const avgX = accelValues.x.reduce((a, b) => a + b, 0) / accelValues.x.length;
+            //             const avgY = accelValues.y.reduce((a, b) => a + b, 0) / accelValues.y.length;
+            //             const avgZ = accelValues.z.reduce((a, b) => a + b, 0) / accelValues.z.length;
+            //             setAccelAverages({ x: avgX, y: avgY, z: avgZ });
+            //             //setAccelAverages({ x: x, y: y, z: z });
 
-                        appendFile(accel_file, raw + "\n"); // store to file
-                    }
-                }
-            );
+            //             appendFile(accel_file, raw + "\n"); // store to file
+            //         }
+            //     }
+            // );
 
             // pressure monitoring
             connected.monitorCharacteristicForService(
@@ -477,6 +484,42 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                             // setPressure(parseFloat(parts[0])); // display first pressure sensor only *for testing*
                             appendFile(pressure_file, formatted + "\n"); // store to file
 
+                            // detect if pressure sensor is not working properly
+                            // let newStuck: number[] = [];
+                            // parts.forEach((v, i) => {
+                            // const num = parseFloat(v);
+                            // const ref = stuckRefs.current;
+
+                            // if (ref.prev[i] === num) {
+                            //     ref.count[i]++;
+
+                            //     if (ref.count[i] === ref.threshold && !ref.stuck[i]) {
+                            //     ref.stuck[i] = true;
+                            //     newStuck.push(i);
+                            //     }
+                            // } else {
+                            //     ref.prev[i] = num;
+                            //     ref.count[i] = 1;
+                            // }
+                            // });
+
+                            // if (newStuck.length > 0 && setPressureWarning) {
+                            //     setPressureWarning(prev => {
+                            //         const existing = prev ? prev.match(/\d+/g)?.map(Number) ?? [] : [];
+                            //         const combined = Array.from(new Set([...existing, ...newStuck]));
+                            //         return `Pressure sensor issue: ${combined.join(", ")}`;
+                            //     });
+                            // }
+
+
+                            //const stuckSensors = stuckRefs.current.stuck.map((isStuck, i) => (isStuck ? i : null)).filter(i => i !== null);
+
+                            // if (stuckSensors.length > 0) {
+                            //     setError(`Pressure sensor(s) stuck: ${stuckSensors.join(", ")}`);
+                            // } else {
+                            //     setError("");
+                            // }
+
                             const result = stepDetector.update(parseFloat(parts[0]), parseFloat(parts[1]), parseFloat(parts[2]), Date.now());
                             
                             const metricLine = `${result.cadence},${result.strideLength},${result.speed},${result.pace},${result.stepCount},${result.distance}\n`;
@@ -495,34 +538,34 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             );
 
             // gyroscope monitoring
-            connected.monitorCharacteristicForService(
-                SERVICE_UUID,
-                GYRO_UUID,
-                (error, characteristic) => {
-                    if (error) {
-                        console.error("Gyro monitor error:", error);
-                        return;
-                    }
-                    if (characteristic?.value) {
-                        // decode ble data into numeric values
-                        const raw = atob(characteristic.value);
-                        const [x, y, z] = raw.split(",").map(Number);
+            // connected.monitorCharacteristicForService(
+            //     SERVICE_UUID,
+            //     GYRO_UUID,
+            //     (error, characteristic) => {
+            //         if (error) {
+            //             console.error("Gyro monitor error:", error);
+            //             return;
+            //         }
+            //         if (characteristic?.value) {
+            //             // decode ble data into numeric values
+            //             const raw = atob(characteristic.value);
+            //             const [x, y, z] = raw.split(",").map(Number);
 
-                        // store raw data
-                        gyroValues.x.push(x);
-                        gyroValues.y.push(y);
-                        gyroValues.z.push(z);
+            //             // store raw data
+            //             gyroValues.x.push(x);
+            //             gyroValues.y.push(y);
+            //             gyroValues.z.push(z);
 
-                        // compute and set averages *double check*
-                        const avgX = gyroValues.x.reduce((a, b) => a + b, 0) / gyroValues.x.length;
-                        const avgY = gyroValues.y.reduce((a, b) => a + b, 0) / gyroValues.y.length;
-                        const avgZ = gyroValues.z.reduce((a, b) => a + b, 0) / gyroValues.z.length;
-                        setGyroAverages({ x: avgX, y: avgY, z: avgZ });
+            //             // compute and set averages *double check*
+            //             const avgX = gyroValues.x.reduce((a, b) => a + b, 0) / gyroValues.x.length;
+            //             const avgY = gyroValues.y.reduce((a, b) => a + b, 0) / gyroValues.y.length;
+            //             const avgZ = gyroValues.z.reduce((a, b) => a + b, 0) / gyroValues.z.length;
+            //             setGyroAverages({ x: avgX, y: avgY, z: avgZ });
 
-                        appendFile(gyro_file, raw + "\n"); // store to file
-                    }
-                }
-            );
+            //             appendFile(gyro_file, raw + "\n"); // store to file
+            //         }
+            //     }
+            // );
 
         } catch (e: any) {
             console.error("Connection failed:", e.message);
@@ -543,25 +586,34 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             if (lines.length === 0) return;
 
             let sums = [0, 0, 0];
-            let count = 0;
+            //let count = 0;
+             let counts = [0, 0, 0]
 
             lines.forEach(line => {
                 // split and handle
                 const vals = line.split(",").map(v => parseFloat(v.trim()));
                 if (vals.length >= 3 && !vals.some(isNaN)) {
-                    sums[0] += vals[0];
-                    sums[1] += vals[1];
-                    sums[2] += vals[2];
-                    count++;
+                    vals.forEach((v, i) => {
+                        if (v < 1023) { // do not account the 1023 values (no pressure)
+                            sums[i] += v;
+                            counts[i]++;
+                        }
+                    });
+                    // sums[0] += vals[0];
+                    // sums[1] += vals[1];
+                    // sums[2] += vals[2];
+                    // count++;
                 }
             });
 
-            if (count > 0) {
-                const avg = sums.map(s => Math.round(s / count));
+            const avg = sums.map((s, i) => (counts[i] > 0 ? Math.round(s / counts[i]) : 1023));
+
+            //if (count > 0) {
+                //const avg = sums.map(s => Math.round(s / count));
                 console.log("Calculated Pressure Averages:", avg);
                 if (setPressureAverages) setPressureAverages(avg);
                 return avg;
-            }
+            //}
         } catch (e) {
             console.log("Error computing averages:", e);
             return null;
@@ -648,7 +700,8 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 <Button
                     title={getButtonTitle()} 
                     onPress={handleButtonPress}
-                    color={connectedDevice ? "#FF3B30" : "#007AFF"}
+                    //color={connectedDevice ? "#FF3B30" : "#007AFF"}
+                    color={"#007AFF"}
                 />
             </View>
             <View style={{ height: 80, width: 260, alignItems: 'center' }}>
@@ -657,7 +710,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 ) : (
                     <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>{getSubText()}</Text>
                 )}
-            {/* {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
+            {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
             
             {!error && (
                 <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>
@@ -667,7 +720,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     <> Not connected {"\n"} Press to begin new session and view live stats </>
                 )}
             </Text>
-            )} */}
+            )}
             
             {/* {pressure !== null && (
                 <Text style={{color: 'white', fontSize: 12, marginBottom: 5}}>
