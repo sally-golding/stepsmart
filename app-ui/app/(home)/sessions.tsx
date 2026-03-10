@@ -25,14 +25,14 @@ export default function SessionView({ data }: { data: SessionData }) {
     if (!data.pressure || data.pressure.length !== 3) return null;
     const [toe, arch, heel] = data.pressure;
     let strikeType = "Even";
-    if (heel < toe) strikeType = "Heel Strike";
-    else if (toe < heel) strikeType = "Left Forefoot Strike";
+    if (heel < toe && heel < arch) strikeType = "Heel Strike";
+    else if (toe < heel && toe < arch) strikeType = "Left Forefoot Strike";
     else if (arch < heel && arch < toe) strikeType = "Right Forefoot Strike";
 
     let insights = "Good form! Keep landing beneath your center of mass.";
-    if (strikeType === "Heel Strike") insights = "Try increasing your cadence to avoid overstriding.";
-    if (strikeType.includes("Forefoot")) insights = "Focus on landing your foot beneath your hips.";
-
+    if (strikeType === "Heel Strike") insights = "Try increasing your cadence and avoid overstriding so your foot lands closer beneath your hips."
+    if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") insights = "Focus on landing your foot beneath your hips to reduce understriding."
+                
     return { strikeType, insights };
   };
 

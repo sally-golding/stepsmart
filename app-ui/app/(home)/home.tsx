@@ -165,16 +165,15 @@ export default function Index() {
 
             // strike type
             let strikeType = "Unknown";
-            if (heel < toe) strikeType = "Heel Strike";
-            else if (toe < heel) strikeType = "Left Forefoot Strike";
+            if (heel < toe && heel < arch) strikeType = "Heel Strike";
+            else if (toe < heel && toe < arch) strikeType = "Left Forefoot Strike";
             else if (arch < heel && arch < toe) strikeType = "Right Forefoot Strike";
             else strikeType = "Even"
 
             // insights
             let insights = "";
             if (strikeType === "Heel Strike") insights = "Try increasing your cadence and avoid overstriding so your foot lands closer beneath your hips."
-            if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") 
-              insights = "Focus on landing your foot beneath your hips to reduce understriding."
+            if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") insights = "Focus on landing your foot beneath your hips to reduce understriding."
             
             return (
               <View>

@@ -237,7 +237,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
             manager.stopDeviceScan();
             setIsScanning(false);
             setError("Device not found");
-        }, 20000);
+        }, 10000);
 
         // start scan
         console.log("Starting scan for", DEVICE_NAME);
@@ -712,7 +712,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 )}
             {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
             
-            {!error && (
+            {/* {!error && (
                 <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>
                 {connectedDevice ? (
                     <> Connected to StepSmart {"\n"} Press to end session and view average stats {"\n"} </>
@@ -720,7 +720,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                     <> Not connected {"\n"} Press to begin new session and view live stats </>
                 )}
             </Text>
-            )}
+            )} */}
             
             {/* {pressure !== null && (
                 <Text style={{color: 'white', fontSize: 12, marginBottom: 5}}>

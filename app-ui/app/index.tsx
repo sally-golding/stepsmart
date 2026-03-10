@@ -16,7 +16,7 @@ type UserProfile = {
 export default function Index() {
 
   useEffect(() => {
-    console.log("ROOT index.tsx mounted");
+    //console.log("ROOT index.tsx mounted");
   }, []);
 
   const router = useRouter();
