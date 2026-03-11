@@ -3,6 +3,7 @@ import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Location from 'expo-location';
+import * as SecureStore from "expo-secure-store";
 import { StepDetector } from "./analysis"
 
 interface BLEButtonProps {
@@ -20,18 +21,40 @@ interface BLEButtonProps {
     onConnect?: () => void; // only render heatmap post session, do not maintain previous heatmap during a new session
 }
 
+const [history_file, setHistoryFile] = useState<string>("");
+
+useEffect(() => {
+  const loadProfile = async () => {
+    const profile = await SecureStore.getItemAsync("currentUser");
+
+    if (profile) {
+      const parsed = JSON.parse(profile);
+
+      const safeName = parsed.name.replace(/[^a-zA-Z0-9]/g, "_");
+
+      const filePath =
+        (FileSystem as any).documentDirectory +
+        `${safeName}_sessions_history.json`;
+
+      setHistoryFile(filePath);
+    }
+  };
+
+  loadProfile();
+}, []);
+
 const accelValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
 const gyroValues: { x: number[]; y: number[]; z: number[] } = { x: [], y: [], z: [] };
 
 // ble controller (scanning, connecting, monitoring characteristics)
-const manager = new BleManager();
+const managerRef = useRef(new BleManager());
+const manager = managerRef.current;
 
 // file paths to store data
 const pressure_file: string = (FileSystem as any).documentDirectory + "pressure_data.txt";
 const accel_file: string = (FileSystem as any).documentDirectory + "accel_data.txt";
 const gyro_file: string = (FileSystem as any).documentDirectory + "gyro_data.txt";
 const metrics_file: string = (FileSystem as any).documentDirectory + "metrics_data.txt"; // cadence, stride length, speed, and pace
-const history_file: string = (FileSystem as any).documentDirectory + "sessions_history.json"; // store post session
 
 // clear file with a new connection
 async function resetFile(path: string) {
@@ -61,15 +84,19 @@ async function appendFile(path: string, text: string) {
 // save session
 async function saveSessionToHistory(sessionSummary: any) {
     try {
-        const fileInfo = await FileSystem.getInfoAsync(history_file);
-        let history = [];
-        if (fileInfo.exists) {
-            const content = await FileSystem.readAsStringAsync(history_file);
-            history = JSON.parse(content);
+
+        if(history_file) {
+            const fileInfo = await FileSystem.getInfoAsync(history_file);
+            let history = [];
+            if (fileInfo.exists) {
+                const content = await FileSystem.readAsStringAsync(history_file);
+                history = JSON.parse(content);
+            }
+            history.push(sessionSummary);
+            await FileSystem.writeAsStringAsync(history_file, JSON.stringify(history), { encoding: "utf8" });
+            console.log("Session saved to history.");
         }
-        history.push(sessionSummary);
-        await FileSystem.writeAsStringAsync(history_file, JSON.stringify(history), { encoding: "utf8" });
-        console.log("Session saved to history.");
+        
     } catch (e) {
         console.error("Error saving history:", e);
     }
