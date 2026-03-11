@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from "react-native";
-import { useEffect, useState, useCallback } from "react";
 import * as FileSystem from "expo-file-system/legacy";
 import { useFocusEffect } from "expo-router";
-import SessionView from "./sessions"; 
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useState } from "react";
+import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import SessionView from "./sessions";
 
 export default function Activities() {
   const [history, setHistory] = useState<any[]>([]);
@@ -13,12 +14,26 @@ const loadHistory = async () => {
   // uncomment to clear
   //await FileSystem.writeAsStringAsync((FileSystem as any).documentDirectory + "sessions_history.json", JSON.stringify([]));
     try {
-    const path = (FileSystem as any).documentDirectory + "sessions_history.json";
+    //const path = (FileSystem as any).documentDirectory + "sessions_history.json";
+    //const fileInfo = await FileSystem.getInfoAsync(path);
+
+    const userId = await SecureStore.getItemAsync("userId");
+    if (!userId) {
+      console.log("No userId found");
+      setHistory([]);
+      return;
+    }
+    const path = (FileSystem as any).documentDirectory + `sessions_history_${userId}.json`;
     const fileInfo = await FileSystem.getInfoAsync(path);
+
+
+
     if (fileInfo.exists) {
-        const content = await FileSystem.readAsStringAsync(path);
-        const parsed = JSON.parse(content);
-        setHistory(parsed.reverse()); // newest first
+      const content = await FileSystem.readAsStringAsync(path);
+      const parsed = JSON.parse(content);
+      setHistory(parsed.reverse()); // newest first
+    } else {
+      setHistory([]);
     }
   } catch (e) {
     console.log("Error loading history:", e);

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
-import { BleManager, Device } from "react-native-ble-plx";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Location from 'expo-location';
-import { StepDetector } from "./analysis"
+import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useRef, useState } from "react";
+import { Button, PermissionsAndroid, Platform, Text, View } from "react-native";
+import { BleManager, Device } from "react-native-ble-plx";
+import { StepDetector } from "./analysis";
 
 interface BLEButtonProps {
     setPressureAverages?: React.Dispatch<React.SetStateAction<number[] | null>>; // array  for iteration (heatmap)
@@ -31,7 +32,12 @@ const pressure_file: string = (FileSystem as any).documentDirectory + "pressure_
 const accel_file: string = (FileSystem as any).documentDirectory + "accel_data.txt";
 const gyro_file: string = (FileSystem as any).documentDirectory + "gyro_data.txt";
 const metrics_file: string = (FileSystem as any).documentDirectory + "metrics_data.txt"; // cadence, stride length, speed, and pace
-const history_file: string = (FileSystem as any).documentDirectory + "sessions_history.json"; // store post session
+//const history_file: string = (FileSystem as any).documentDirectory + "sessions_history.json"; // store post session
+// save sessions for each user separately
+async function getHistoryFile() {
+    const userId = await SecureStore.getItemAsync("userId");
+    return (FileSystem as any).documentDirectory + `sessions_history_${userId}.json`;
+}
 
 // clear file with a new connection
 async function resetFile(path: string) {
@@ -61,7 +67,10 @@ async function appendFile(path: string, text: string) {
 // save session
 async function saveSessionToHistory(sessionSummary: any) {
     try {
+        //const fileInfo = await FileSystem.getInfoAsync(history_file);
+        const history_file = await getHistoryFile();
         const fileInfo = await FileSystem.getInfoAsync(history_file);
+        
         let history = [];
         if (fileInfo.exists) {
             const content = await FileSystem.readAsStringAsync(history_file);
@@ -710,7 +719,7 @@ export default function BLEButton({ setPressureAverages, setAccelAverages, setGy
                 ) : (
                     <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>{getSubText()}</Text>
                 )}
-            {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>}
+            {/* {error && <Text style={{color: 'red', marginTop: 5, fontSize: 12, fontWeight: "bold"}}>{error}</Text>} */}
             
             {/* {!error && (
                 <Text style={{color: 'white', fontSize: 12, textAlign: "center"}}>

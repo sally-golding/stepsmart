@@ -1,9 +1,8 @@
+import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
+import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { Text, Platform, View, StyleSheet } from "react-native";
-import { useState, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
-import { useRouter, Stack } from "expo-router";
-import { DrawerContentScrollView, DrawerItemList, DrawerItem } from "@react-navigation/drawer";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 export default function Layout() {
   const router = useRouter();
@@ -11,6 +10,7 @@ export default function Layout() {
   const handleSignOut = async () => {
     await SecureStore.deleteItemAsync("userProfile");
     await SecureStore.deleteItemAsync("currentUser");
+    await SecureStore.deleteItemAsync("userId");
 
     router.replace("/");
   };

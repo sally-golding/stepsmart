@@ -1,7 +1,7 @@
-import { StyleSheet, View, Text, TextInput, Button, Alert, ScrollView, TouchableOpacity } from "react-native";
-import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useRouter, Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { Button, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type UserProfile = {
   username: string;
@@ -35,12 +35,13 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
 
   // clear session
-  useEffect(() => {
-    const clearSession = async () => {
-      await SecureStore.deleteItemAsync("currentUser");
-    };
-    clearSession();
-  }, []);
+  // useEffect(() => {
+  //   const clearSession = async () => {
+  //     await SecureStore.deleteItemAsync("currentUser");
+  //     await SecureStore.deleteItemAsync("userId");
+  //   };
+  //   clearSession();
+  // }, []);
 
   const handleSubmit = async () => {
     setErrorMessage("");
@@ -65,6 +66,7 @@ export default function Index() {
       }
 
       await SecureStore.setItemAsync("currentUser", JSON.stringify(user));
+      await SecureStore.setItemAsync("userId", user.username); 
       router.replace("/(home)/home");
 
     } else {
@@ -99,6 +101,7 @@ export default function Index() {
 
       await SecureStore.setItemAsync("currentUser", JSON.stringify(profile));
       await SecureStore.setItemAsync("userProfile", JSON.stringify(profile));
+      await SecureStore.setItemAsync("userId", profile.username); 
 
       //const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
       
