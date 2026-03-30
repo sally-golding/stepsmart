@@ -55,9 +55,19 @@ Beta Build Outlined Work:
 - App: added side menu, account creation and login, view past runs, view user profile
 - New 3-D enclosure
 
-Current Bugs:
-- Funky numbers from gyroscope values, will need to add a calibration detail to the code
-- Lack of proper packet validation in current build; application assumes valid BLE data
+Release Candidate Outlined Work:
+- Defined weight limits and calibrated heat map
+- Added TCU wrapping to waterproof the system
+- Conducted additional testing with different weights and longer run times
+- Implemented pause functionality
+- Refactored code and expanded documentation
+- Made app standalone
+
+Current Bugs and Limitations:
 - Automatic BLE reconnection is not supported
-- Analog input pins A1 and A2 are not functional
-- Heatmap and analysis features are not fully complete and require additional testing and calibration
+- Application assumes valid BLE data is received; partial, delayed, or inaccurate data is not handled
+- Pressure data is limited to three sensor points
+- Pressure averages are calculated after disconnecting from device, preventing the user from viewing real-time updates
+- Mobile application is supported on Android devices only
+- Keyboard hides text input boxes on Sign Up page
+- Post session information sometimes displays all zeros
