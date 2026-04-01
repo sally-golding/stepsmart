@@ -69,5 +69,4 @@ Current Bugs and Limitations:
 - Pressure data is limited to three sensor points
 - Pressure averages are calculated after disconnecting from device, preventing the user from viewing real-time updates
 - Mobile application is supported on Android devices only
-- Keyboard hides text input boxes on Sign Up page
 - Post session information sometimes displays all zeros
