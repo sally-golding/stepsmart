@@ -1,38 +1,36 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
-import { Button, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Button, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+// type definition for user's presistent profile
 type UserProfile = {
   username: string;
   passwordHash: string;
   name: string;
-  dob: string; // ISO date string
+  dob: string; // mmddyyyy
   heightFt: number;
   heightIn: number;
   weightLb: number;
 };
 
 export default function Index() {
-
-  useEffect(() => {
-    //console.log("ROOT index.tsx mounted");
-  }, []);
-
   const router = useRouter();
 
+  // login and signup fields
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  // signup-only fields
   const [name, setName] = useState("");
   const [dob, setDob] = useState(""); // yyyy-mm-dd
   const [heightFt, setHeightFt] = useState("");
   const [heightIn, setHeightIn] = useState("");
   const [weightLb, setWeightLb] = useState("");
 
-  const [errorMessage, setErrorMessage] = useState("");
-
+  // ui and form state
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // clear session
   // useEffect(() => {
@@ -65,6 +63,7 @@ export default function Index() {
         return;
       }
 
+      // save session and redirect
       await SecureStore.setItemAsync("currentUser", JSON.stringify(user));
       await SecureStore.setItemAsync("userId", user.username); 
       router.replace("/(home)/home");
@@ -96,6 +95,7 @@ export default function Index() {
         weightLb: parseInt(weightLb),
       };
 
+      // update user database and set current session
       const updatedUsersList = [...usersList, profile];
       await SecureStore.setItemAsync("allUsers", JSON.stringify(updatedUsersList));
 
@@ -103,14 +103,13 @@ export default function Index() {
       await SecureStore.setItemAsync("userProfile", JSON.stringify(profile));
       await SecureStore.setItemAsync("userId", profile.username); 
 
-      //const user = usersList.find(u => u.username.toLowerCase() === username.toLowerCase());
-      
-
+      // redirect
       router.replace("/(home)/home");
 
     }
   };
 
+  // simple deterministic string hashing for passwords
   const hashPassword = async (pw: string) => {
     let hash = 0;
     for (let i = 0; i < pw.length; i++) {
@@ -122,125 +121,127 @@ export default function Index() {
 
   // ui
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.container}>
-        <View style={{ height: 35 }} />
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} 
+    style={{ flex: 1, backgroundColor: "#1c1c1e" }}>
 
-        <Text style={styles.title}>StepSmart</Text>
+    
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.container}>
+          <View style={{ height: 35 }} />
 
-          {/* <Text style={styles.title}>
-            {hasProfile ? "Log In" : "Create An Account"}
-          </Text> */}
-          <View style={{ height: 8 }} />
+          <Text style={styles.title}>StepSmart</Text>
 
-          <View style={styles.tabContainer}>
-            <TouchableOpacity 
-              style={[styles.tab, activeTab === "login" && styles.activeTab]} 
-              onPress={() => { setActiveTab("login"); setErrorMessage(""); }}
-            >
-              <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Log In</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, activeTab === "signup" && styles.activeTab]} 
-              onPress={() => { setActiveTab("signup"); setErrorMessage(""); }}
-            >
-              <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-     
-          <Text style={styles.label}>Username</Text>
-            <TextInput
-              style={styles.input}
-              autoCapitalize="none"
-              value={username}
-              onChangeText={setUsername}
-            />
+            <View style={{ height: 8 }} />
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              autoCapitalize="none"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-
-          {activeTab === "signup" && (
-            <>
-            <Text style={styles.label}>Name </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor="#949494"
-              value={name}
-              onChangeText={setName}
-            />
-
-            <Text style={styles.label}>Date of Birth</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="MMDDYYY"
-              placeholderTextColor="#949494"
-              keyboardType="numeric"
-              value={dob}
-              maxLength={8}
-              onChangeText={setDob}
-            />
-
-            <Text style={styles.label}>Height</Text>
-            <View style={styles.row}>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === "login" && styles.activeTab]} 
+                onPress={() => { setActiveTab("login"); setErrorMessage(""); }}
+              >
+                <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Log In</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === "signup" && styles.activeTab]} 
+                onPress={() => { setActiveTab("signup"); setErrorMessage(""); }}
+              >
+                <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+      
+            <Text style={styles.label}>Username</Text>
               <TextInput
-                style={[styles.input, { flex: 1, marginRight: 5 }]}
-                placeholder="ft"
-                placeholderTextColor="#949494"
-                keyboardType="numeric"
-                value={heightFt}
-                onChangeText={setHeightFt}
+                style={styles.input}
+                autoCapitalize="none"
+                value={username}
+                onChangeText={setUsername}
               />
+
+              <Text style={styles.label}>Password</Text>
               <TextInput
-                style={[styles.input, { flex: 1, marginLeft: 5 }]}
-                placeholder="in"
+                style={styles.input}
+                autoCapitalize="none"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+
+            {activeTab === "signup" && (
+              <>
+              <Text style={styles.label}>Name </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor="#949494"
+                value={name}
+                onChangeText={setName}
+              />
+
+              <Text style={styles.label}>Date of Birth</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="MMDDYYY"
                 placeholderTextColor="#949494"
                 keyboardType="numeric"
-                value={heightIn}
-                onChangeText={setHeightIn}
+                value={dob}
+                maxLength={8}
+                onChangeText={setDob}
+              />
+
+              <Text style={styles.label}>Height</Text>
+              <View style={styles.row}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 5 }]}
+                  placeholder="ft"
+                  placeholderTextColor="#949494"
+                  keyboardType="numeric"
+                  value={heightFt}
+                  onChangeText={setHeightFt}
                 />
+                <TextInput
+                  style={[styles.input, { flex: 1, marginLeft: 5 }]}
+                  placeholder="in"
+                  placeholderTextColor="#949494"
+                  keyboardType="numeric"
+                  value={heightIn}
+                  onChangeText={setHeightIn}
+                  />
+              </View>
+
+              <Text style={styles.label}>Weight</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="lb"
+                placeholderTextColor="#949494"
+                keyboardType="numeric"
+                value={weightLb}
+                onChangeText={setWeightLb}
+              />
+              </>
+            )}
+
+            <View style={styles.button}>
+              <Button
+                title={activeTab === "login" ? "Log In" : "Create Account"} 
+                onPress={handleSubmit}
+                color="#007AFF" 
+              />
             </View>
 
-            <Text style={styles.label}>Weight</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="lb"
-              placeholderTextColor="#949494"
-              keyboardType="numeric"
-              value={weightLb}
-              onChangeText={setWeightLb}
-            />
-            </>
-          )}
+            <View style={{ height: 50}}>
+              {errorMessage ? (
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            ) : null}
+            </View>
 
-          <View style={styles.button}>
-            <Button
-              title={activeTab === "login" ? "Log In" : "Create Account"} 
-              onPress={handleSubmit}
-              color="#007AFF" 
-            />
           </View>
-
-          <View style={{ height: 50}}>
-            {errorMessage ? (
-            <Text style={styles.errorText}>{errorMessage}</Text>
-          ) : null}
-          </View>
-
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    //flex: 1,
     backgroundColor: "#1c1c1e",
     padding: 20,
     justifyContent: "flex-start",

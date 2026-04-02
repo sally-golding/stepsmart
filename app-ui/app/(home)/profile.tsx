@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from "react-native";
-import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-// InfoRow stays stable outside
+// reuseable sub-component for profile row
+// switches between text view and text input when editing
 const InfoRow = ({ label, field, value, isEditing, editedProfile, onUpdate, isLast, formatDate }: any) => {
-  const canEdit = isEditing && field !== "username";
+  const canEdit = isEditing && field !== "username"; // cannot edit unique username
   return (
     <View style={[styles.infoRow, isLast && { borderBottomWidth: 0 }]}>
       <Text style={styles.label}>{label}</Text>
@@ -25,10 +26,11 @@ const InfoRow = ({ label, field, value, isEditing, editedProfile, onUpdate, isLa
 };
 
 export default function Profile() {
-  const [profile, setProfile] = useState<any>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null); // saved "truth" from storage
+  const [isEditing, setIsEditing] = useState(false); // ui toggle state
+  const [editedProfile, setEditedProfile] = useState<any>(null); // temp state for changes
 
+  // load user data from persisent storage on mount
   useEffect(() => {
     const loadProfile = async () => {
       const data = await SecureStore.getItemAsync("currentUser");
@@ -41,12 +43,19 @@ export default function Profile() {
     loadProfile();
   }, []);
 
+
+  // update specific fields in temp state
   const onUpdateField = (field: string, text: string) => {
     setEditedProfile((prev: any) => ({ ...prev, [field]: text }));
   };
 
+  // save changes to SecureStore
+  // updates current user (for session) and all users list (database)
   const handleSave = async () => {
+    // save to current session
     await SecureStore.setItemAsync("currentUser", JSON.stringify(editedProfile));
+
+    // sync with master user lsit
     const rawUsers = await SecureStore.getItemAsync("allUsers");
     if (rawUsers) {
       const usersList = JSON.parse(rawUsers);
@@ -59,6 +68,7 @@ export default function Profile() {
     setIsEditing(false);
   };
 
+  // helper to turn mmddyyyy into mm/dd/yyyy for ui
   const formatDate = (dobString: string) => {
     if (!dobString || dobString.length !== 8) return dobString;
     return `${dobString.substring(0, 2)}/${dobString.substring(2, 4)}/${dobString.substring(4, 8)}`;

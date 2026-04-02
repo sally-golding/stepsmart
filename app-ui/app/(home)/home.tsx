@@ -1,33 +1,29 @@
-import { StyleSheet, Text, View } from "react-native";
-import BLEButton from "./ble";
-import React, { useState, useEffect } from "react";
-import Heatmap from "./heatmap";
 import * as SecureStore from "expo-secure-store";
-import { Redirect } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import BLEButton from "./ble/ble";
+import Heatmap from "./heatmap";
 
 export default function Index() {
-  // user profile
+  // user profile state
   const [userName, setUserName] = useState<string | null>(null);
-  //const [isLoading, setIsLoading] = useState(true);
+  const [userWeight, setUserWeight]  = useState<number | null>(null);
 
+  // on mount, load user profile
   useEffect(() => {
     const loadProfile = async () => {
       const profile = await SecureStore.getItemAsync("currentUser");
       if (profile) {
         const parsed = JSON.parse(profile);
         setUserName(parsed.name);
-        //setIsLoading(false);
+        setUserWeight(parsed.weightLb); // needed for heatmap
       }
     };
     loadProfile();
   }, []);
 
-  // session
+  // session and metric state
   const [averages, setAverages] = useState<number[] | null>(null); // pressure sensor averages
-  //const [pressureWarning, setPressureWarning] = useState<string | null>(null);
-  const [accelAverages, setAccelAverages] = useState<{ x: number; y: number; z: number } | null>(null); // accel data
-  const [gyroAverages, setGyroAverages] = useState<{ x: number; y: number; z: number } | null>(null); // gyro data
-  // step metrics
   const [stepCount, setStepCount] = useState<number>(0);
   const [cadence, setCadence] = useState<number>(0);
   const [strideLength, setStrideLength] = useState<number>(0);
@@ -36,6 +32,7 @@ export default function Index() {
   const [distance, setDistance] = useState<number>(0);
   const [timer, setTimer] = useState<string>("00:00:00");
 
+  // resets ui state when a new ble connection is established
   const handleNewSession = () => {
     setAverages(null); // only render heatmap post session, do not maintain previous heatmap during a new session
     setStepCount(0);
@@ -47,6 +44,7 @@ export default function Index() {
     setTimer("00:00:00");
   };
 
+  // converts decimale pace to standard running format
   const formatPace = (decimalPace: number | null) => {
     if (!decimalPace || decimalPace === 0) return "0:00";
     const mins = Math.floor(decimalPace);
@@ -67,10 +65,7 @@ export default function Index() {
 
       <View style={styles.buttonBox}>
         <BLEButton // ble button, pass setter functions
-          setPressureAverages={setAverages}
-          //setPressureWarning={setPressureWarning}
-          setAccelAverages={setAccelAverages} 
-          setGyroAverages={setGyroAverages}    
+          setPressureAverages={setAverages}    
           setStepCount={setStepCount}
           setCadence={setCadence} 
           setStrideLength={setStrideLength}
@@ -82,7 +77,7 @@ export default function Index() {
         />
       </View>
 
-      <View style={{ height: 8 }} />
+      <View style={{ height: 55 }} />
 
       <View style={styles.strideGaitBox}>
         {stepCount !== null && cadence !== null && speed !== null && pace != null && distance != null ? ( // stride and gait => step count, cadence (if no data show placeholder text)
@@ -96,11 +91,6 @@ export default function Index() {
             <Text style={styles.analysisText}>
               <Text style={{ fontWeight: "bold" }}>Step Count:</Text> {stepCount}
             </Text>
-
-            {/* <Text style={[styles.analysisText, {fontWeight: "bold"}]}>
-              {averages ? "Average Stats " : "Live Stats: "}
-            </Text> */}
-
             <Text style={styles.analysisText}>
               <Text style={{ fontWeight: "bold" }}>Speed:</Text> {(speed).toFixed(2)} mph
             </Text>
@@ -119,31 +109,13 @@ export default function Index() {
            <Text style={styles.placeholderText}>Stride & Gait Analysis</Text>
         )}
 
-        {/* {accelAverages && gyroAverages ? (
-          <>
-            <Text style={styles.analysisText}>
-              Accelerometer: x = {accelAverages.x.toFixed(2)}, y = {accelAverages.y.toFixed(2)}, z = {accelAverages.z.toFixed(2)}
-            </Text>
-            <Text style={styles.analysisText}>
-              Gyroscope: x = {gyroAverages.x.toFixed(2)}, y = {gyroAverages.y.toFixed(2)}, z = {gyroAverages.z.toFixed(2)}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.placeholderText}>Accel & Gyro Data</Text>
-        )} */}
-
       </View>
 
       <View style={{ height: 8 }} />
 
       <View style={styles.heatmapBox}>
-        {/* {pressureWarning && (
-          <Text style={{ color: "red", fontSize: 12, fontWeight: "bold", textAlign: "center" }}>
-            {pressureWarning}
-          </Text>
-        )} */}
-        {averages && averages.length === 3 ? ( // render and display heatmap when data is valid
-          <Heatmap averages={averages} />
+        {averages && averages.length === 3 && userWeight !== null ? ( // render and display heatmap when data is valid
+          <Heatmap averages={averages} userWeight={userWeight} />
         ) : (
           <Text style={styles.placeholderText}>Pressure Visualization</Text>
         )}
@@ -208,7 +180,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     color: "#fff",
     fontSize: 18,
-    marginTop: 10,
+    marginTop: 5,
     marginBottom: 10,
     fontWeight: "600",
     textAlign: "center"
@@ -216,7 +188,7 @@ const styles = StyleSheet.create({
   welcomeBox: {
     width: "90%",
     height: 60,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   title: {
     fontSize: 24,
@@ -236,7 +208,7 @@ const styles = StyleSheet.create({
   },
   strideGaitBox: {
     width: "90%",
-    height: 180,
+    height: 160,
     backgroundColor: "#3a3a3c",
     borderRadius: 20,
     justifyContent: "center",
@@ -246,7 +218,7 @@ const styles = StyleSheet.create({
   },
   heatmapBox: {
     width: "90%",
-    height: 245,
+    height: 235,
     backgroundColor: "#3a3a3c",
     borderRadius: 20,
     justifyContent: "center",
@@ -257,7 +229,7 @@ const styles = StyleSheet.create({
   },
   insightsBox: {
     width: "90%",
-    height: 85,
+    height: 75,
     // backgroundColor: "#e6e6e6",
     backgroundColor: "#3a3a3c",
     borderRadius: 20,

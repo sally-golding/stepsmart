@@ -1,4 +1,4 @@
-// step count, cadence, stride length, speed
+// interface defining structure of data returned
 export interface StepDetectionResult {
     stepCount: number;
     cadence: number; // steps / minute
@@ -10,138 +10,109 @@ export interface StepDetectionResult {
 
 export class StepDetector {
 
-    private isGrounded : boolean = true;
+    private isGrounded : boolean = true; // tracks if foot is currently touching the sensor (ground)
 
-    private stepCount = 0;
-    private stepTimes: number[] = [];
+    private stepCount = 0; // total of steps detected
+    private stepTimes: number[] = []; // array of timestamps to calculate cadence
 
-    private lastStepTime = 0;
-    private rawSpeed = 0;
-    private pace = 0;
-    private distanceMeters = 0;
-    private lastTimestamp = 0;
+    private lastStepTime = 0; // timestamp of last detected step
+    private rawSpeed = 0; // gps in m/s
+    private pace = 0; // calculated min/mile
+    private distanceMeters = 0; // total distance in meters
+    private lastTimestamp = 0; // used to calculated time difference between data
 
-    // *calibrate*
-    private impactThreshold = -1.2;    // foot strike
-    private releaseThreshold = -0.3;   // foot lift
-    private minStepInterval = 350;     // ms
+    private paused = false; // prevents processing during session pause
 
-    private readyForStep = true;
-
-    // height in meters
-    //private height: number;
-
-    // pass in user height, convert to meters for calculations (not used anymore)
-    // constructor(feet: number, inches: number) {
-    //     const heightInches = feet * 12 + inches;
-    //     this.height = heightInches * 0.0254;
-    // }
-
-    public setSpeed(gpsSpeed: number | null) {
-
-        if(gpsSpeed !== null) {
-
-            this.rawSpeed = gpsSpeed;
-
-        } else {
-
-            this.rawSpeed = 0;
-
-        }
-        
-
+    // stores results of last calculation for quick retrieval
+    private lastResult = {
+        stepCount: 0,
+        cadence: 0,
+        strideLength: 0,
+        speed: 0,
+        pace: 0,
+        distance: 0
     }
 
+    // session control
+    public resume(currentTime: number) {
+        this.paused = false;
+        this.lastTimestamp = currentTime; // reset timestamp to prevent distance jumps on resume
+    }
+
+    public pause() {
+        this.paused = true;
+    }
+
+    public getLatestMetrics() : StepDetectionResult {
+        return this.lastResult;
+    }
+
+    // updates internal speed variable
+    public setSpeed(gpsSpeed: number | null) {
+        if(gpsSpeed !== null) {
+            this.rawSpeed = gpsSpeed;
+        } else {
+            this.rawSpeed = 0;
+        }
+    }
+
+    // core logic
     // updates each time there is a new z value
     public update(pressure_sensor1: number, pressure_sensor2: number, pressure_sensor3: number, timestamp: number): StepDetectionResult {
-        
+       
+        if (this.paused) {
+            return this.lastResult;
+        }
+
         // calculate step count
-
+        // if any sensor value drops to/below 600, it indicates a foot strike
         if (pressure_sensor1 <= 600 || pressure_sensor2 <= 600 || pressure_sensor3 <= 600) {
-
+            // trigger a step if not grounded and enough time has passed
             if(!this.isGrounded && (timestamp - this.lastStepTime > 700)) {
-
                 this.isGrounded = true;
-                this.stepCount += 2;
+                this.stepCount += 2; // increment by two to account for both feet
 
                 this.lastStepTime = timestamp;
-                this.stepTimes.push(timestamp);
+                this.stepTimes.push(timestamp); // log time of step for cadence
                 console.log("++++++++++++++++++++++++++++++");
             }     
 
        }
+       // reset grounding state
        if (pressure_sensor1 > 600 && pressure_sensor2 > 600 && pressure_sensor3 > 600) {
-
             this.isGrounded = false;
-            //console.log("not grounded");
-
         }
 
-        // const contact =
-        // pressure_sensor1 <= 800 ||
-        // pressure_sensor2 <= 800 ||
-        // pressure_sensor3 <= 800;
-
-        // if (contact && !this.isGrounded && timestamp - this.lastStepTime > 200) {
-        //     this.stepCount += 2;
-        //     this.lastStepTime = timestamp;
-        //     this.stepTimes.push(timestamp);
-        //     this.isGrounded = true;
-        // }
-
-        // const unloadedCount =
-        // (pressure_sensor1 > 800 ? 1 : 0) +
-        // (pressure_sensor2 > 800 ? 1 : 0) +
-        // (pressure_sensor3 > 800 ? 1 : 0);
-
-        // if (unloadedCount >= 2) {
-        //     this.isGrounded = false;
-        // }
-
         // calculate cadence
+        // keep only steps from last 10 seconds
         this.stepTimes = this.stepTimes.filter(t => timestamp - t <= 10000);
         let cadence = 0;
         if (this.stepTimes.length > 1) {
             const firstStep = this.stepTimes[0];
             const lastStep = this.stepTimes[this.stepTimes.length - 1];
             
-            // Calculate actual time span in seconds (e.g., 4.2 seconds)
+            // calculate actual time span in seconds
             const timeSpanSeconds = (lastStep - firstStep) / 1000;
 
             if (timeSpanSeconds > 0) {
-                // (Steps / Time) * 60 = Steps Per Minute
-                // Use length - 1 because we are measuring intervals BETWEEN steps
+                // (steps / time) * 60 = steps per minute
+                // use length - 1 because we are measuring intervals between steps
                 cadence = ((this.stepTimes.length - 1) / timeSpanSeconds) * 60;
             }
         }
 
-        //const cadence = this.stepTimes.length > 1 ? (this.stepTimes.length / 10) * 60 : 0;
-
-        // // calculate stride length 
-        // // industry standard: stride length = 0.41 * leg length, leg length = 0.53 * height
-        // const legLength = this.height * 0.53;
-
-        // // stride factor for running vs walking based on cadence (industry standard)
-        // let strideFactor: number;
-        // if (cadence <= 140) {
-        //     strideFactor = 0.41;
-        // } else {
-        //     strideFactor = 0.65;
-        // }
-
-        // const stepLength = (cadence === 0) ? 0 : legLength * strideFactor;
-        // const strideLength = (cadence === 0) ? 0 : stepLength * 2;
-
+        // calculate stride length
         let strideLength = 0;
         if (cadence > 0) {
             const stepsPerSecond = cadence / 60;
+            // speed (m/s) / steps per second = step length
+            // stride length is two steps
             const stepLengthInMeters = this.rawSpeed / stepsPerSecond;
             strideLength = stepLengthInMeters * 2;
         }
 
         // calculate speed in MPH instead of MPS
         const speed = this.rawSpeed * 2.23694;
-
         let pace = 0;
         if (speed > 0.1) {
             pace = 60 / speed;
@@ -157,7 +128,8 @@ export class StepDetector {
         this.lastTimestamp = timestamp;
         const distanceMiles = this.distanceMeters * 0.000621371;
 
-        return {
+        // final result object
+        const result = {
             stepCount: this.stepCount,
             cadence: Math.round(cadence),
             strideLength: Number(strideLength.toFixed(2)),
@@ -165,8 +137,12 @@ export class StepDetector {
             pace: Number(pace.toFixed(2)),
             distance: Number(distanceMiles.toFixed(2)),
         };
+
+        this.lastResult = result;
+        return result;
     }
 
+    // helper getters
     public getStepCount(): number {
         return this.stepCount;
     }
@@ -177,16 +153,15 @@ export class StepDetector {
 
     // reset values
     public reset() {
-
         this.isGrounded = true;
         this.rawSpeed = 0;
         this.stepCount = 0;
         this.stepTimes = [];
         this.lastStepTime = 0;
-        this.readyForStep = true;
         this.pace = 0;
         this.distanceMeters = 0;
         this.lastTimestamp = 0;
+        this.paused = false;
     }
 }
 

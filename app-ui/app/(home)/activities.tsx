@@ -11,42 +11,43 @@ export default function Activities() {
 
 // load
 const loadHistory = async () => {
-  // uncomment to clear
+  // uncomment to clear all past activities
   //await FileSystem.writeAsStringAsync((FileSystem as any).documentDirectory + "sessions_history.json", JSON.stringify([]));
     try {
-    //const path = (FileSystem as any).documentDirectory + "sessions_history.json";
-    //const fileInfo = await FileSystem.getInfoAsync(path);
+      const userId = await SecureStore.getItemAsync("userId"); // get current user id to find correct file
+      if (!userId) {
+        console.log("No userId found");
+        setHistory([]);
+        return;
+      }
 
-    const userId = await SecureStore.getItemAsync("userId");
-    if (!userId) {
-      console.log("No userId found");
-      setHistory([]);
-      return;
-    }
-    const path = (FileSystem as any).documentDirectory + `sessions_history_${userId}.json`;
-    const fileInfo = await FileSystem.getInfoAsync(path);
+      // path to check if history file exists
+      const path = (FileSystem as any).documentDirectory + `sessions_history_${userId}.json`;
+      const fileInfo = await FileSystem.getInfoAsync(path);
 
-
-
-    if (fileInfo.exists) {
-      const content = await FileSystem.readAsStringAsync(path);
-      const parsed = JSON.parse(content);
-      setHistory(parsed.reverse()); // newest first
-    } else {
-      setHistory([]);
-    }
+      if (fileInfo.exists) {
+        // read content, parse json, and reverse it so the newwest runs appear at the top
+        const content = await FileSystem.readAsStringAsync(path);
+        const parsed = JSON.parse(content);
+        setHistory(parsed.reverse()); // newest first
+      } else {
+        setHistory([]); // reset if no file found
+      }
   } catch (e) {
     console.log("Error loading history:", e);
     }
 };
 
+// runs every time user navigations back to this tab
+// ensures the list updates immediately after a user finishes a new run
 useFocusEffect(
     useCallback(() => {
-      loadHistory();
+      setSelectedSession(null); // reset to list view
+      loadHistory(); // refresh data
     }, [])
 );
 
-  // if selected show component
+  // if selected show component (session)
   if (selectedSession) {
     return (
       <View style={{ flex: 1, backgroundColor: "#1c1c1e", alignItems: "stretch" }}>
@@ -54,18 +55,18 @@ useFocusEffect(
           <View style={{ width: 200, height: 50 }}>
             <Button 
               title="Back to Activities" 
-              onPress={() => setSelectedSession(null)} 
+              onPress={() => setSelectedSession(null)} // clear selection to return to list
               color="#007AFF" 
             />
           </View>
         </View>      
-        
-        <SessionView data={selectedSession} />
+        {/* full details component for the selected session */}
+        <SessionView data={selectedSession} /> 
       </View>
     );
   }
 
-  // show past sessions
+  // list all past sessions
   return (
     <View style={styles.container}>
       <FlatList

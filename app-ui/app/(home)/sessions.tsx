@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, Text, View, ScrollView } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Heatmap from "./heatmap";
 
+// interface defining structure of saved session
 interface SessionData {
   duration: string;
   distance: number;
@@ -10,10 +11,11 @@ interface SessionData {
   pace: number;
   cadence: number;
   strideLength: number;
-  pressure: number[] | null;
+  pressure: number[] | null; // array of [toe, arch, heel] averages
 }
 
 export default function SessionView({ data }: { data: SessionData }) {
+  // helper to format decimal pace to string
   const formatPace = (decimalPace: number | null) => {
     if (!decimalPace || decimalPace === 0) return "0:00";
     const mins = Math.floor(decimalPace);
@@ -21,14 +23,18 @@ export default function SessionView({ data }: { data: SessionData }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // analyze saved pressure data
   const calculateInsights = () => {
     if (!data.pressure || data.pressure.length !== 3) return null;
     const [toe, arch, heel] = data.pressure;
+
+    // determine strike type based on which sensor registered the most pressure
     let strikeType = "Even";
     if (heel < toe && heel < arch) strikeType = "Heel Strike";
     else if (toe < heel && toe < arch) strikeType = "Left Forefoot Strike";
     else if (arch < heel && arch < toe) strikeType = "Right Forefoot Strike";
 
+    // standard feedback based on strike type
     let insights = "Good form! Keep landing beneath your center of mass.";
     if (strikeType === "Heel Strike") insights = "Try increasing your cadence and avoid overstriding so your foot lands closer beneath your hips."
     if (strikeType === "Left Forefoot Strike" || strikeType === "Right Forefoot Strike") insights = "Focus on landing your foot beneath your hips to reduce understriding."
@@ -53,7 +59,7 @@ export default function SessionView({ data }: { data: SessionData }) {
       <View style={{ height: 10 }} />
 
       <View style={styles.heatmapBox}>
-        {data.pressure ? <Heatmap averages={data.pressure} /> : <Text style={styles.placeholderText}>No Pressue Visualization</Text>}
+        {data.pressure ? <Heatmap averages={data.pressure} userWeight={0} /> : <Text style={styles.placeholderText}>No Pressue Visualization</Text>}
       </View>
 
       <View style={{ height: 10 }} />

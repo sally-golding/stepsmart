@@ -73,19 +73,6 @@ export default function Layout() {
          }}
       />
 
-
-
-      {/* <Drawer.Screen 
-        name="signout" 
-        options={{ title: "Sign Out", drawerLabel: "Sign Out" }} 
-        listeners={{
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            handleSignOut();
-          },
-        }}
-      /> */}
-
       <Drawer.Screen
         name="ble"
         options={{ drawerItemStyle: {display: "none"}}}
@@ -98,6 +85,31 @@ export default function Layout() {
 
       <Drawer.Screen
         name="sessions"
+        options={{ drawerItemStyle: {display: "none"}}}
+      />
+
+      <Drawer.Screen
+        name="analysis"
+        options={{ drawerItemStyle: {display: "none"}}}
+      />
+
+      <Drawer.Screen
+        name="ble/ble"
+        options={{ drawerItemStyle: {display: "none"}}}
+      />
+
+      <Drawer.Screen
+        name="ble/types"
+        options={{ drawerItemStyle: {display: "none"}}}
+      />
+
+      <Drawer.Screen
+        name="ble/storage"
+        options={{ drawerItemStyle: {display: "none"}}}
+      />
+
+      <Drawer.Screen
+        name="ble/permissions"
         options={{ drawerItemStyle: {display: "none"}}}
       />
 
