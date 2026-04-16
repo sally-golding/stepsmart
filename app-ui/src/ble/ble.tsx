@@ -45,17 +45,17 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
     // mount
     useEffect(() => {
         return () => {
-            console.log("BLEButton UNMOUNTED at", Date.now());
+            // console.log("BLEButton UNMOUNTED at", Date.now());
             isMounted.current = false;
         };
     }, []);
 
     // testing 
     const safeSetConnectedDevice = (val: any) => {
-        console.log("setConnectedDevice called at", Date.now(), "mounted:", isMounted.current);
-        if (!isMounted.current) {
-            console.log("setConnectedDevice AFTER UNMOUNT");
-        }
+        // console.log("setConnectedDevice called at", Date.now(), "mounted:", isMounted.current);
+        // if (!isMounted.current) {
+        //     console.log("setConnectedDevice AFTER UNMOUNT");
+        // }
         setConnectedDevice(val);
     };
 
@@ -94,7 +94,6 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             setIsPaused(true);
             isPausedRef.current = true;
             stepDetector.pause(); // stop calculations
-            console.log("Paused");
         } else {
             const now = Date.now();
             if (pauseStart) {
@@ -128,37 +127,37 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
 
     // scan for ble device
     const scanDevices = async () => {
-        console.log("=== SCAN START ===");
+        // console.log("=== SCAN START ===");
 
         // request permissions and check power state
         setError("");
-        console.log("Requesting location permissions");
+        // console.log("Requesting location permissions");
         const location_granted = await requestLocationPermission();
 
         if (!location_granted) {
-            console.log("Location Permissions denied");
+            // console.log("Location Permissions denied");
             setError("Location Permissions denied");
             return;
         }
 
-        console.log("Requesting BLE permissions");
+        // console.log("Requesting BLE permissions");
         const granted = await requestBlePermissions();
         
         if (!granted) {
-            console.log("BLE permissions denied");
+            // console.log("BLE permissions denied");
             setError("BLE permissions denied");
             return;
         }
         
-        console.log("Permissions granted: true");
+        // console.log("Permissions granted: true");
 
-        console.log("Checking BLE state");
+        // console.log("Checking BLE state");
         const state = await manager.state();
-        console.log("BLE state:", state);
+        // console.log("BLE state:", state);
         
         // ensure ble hardware (arduino) in on
         if (state !== "PoweredOn") {
-            console.log("Bluetooth is OFF");
+            // console.log("Bluetooth is OFF");
             setError("Bluetooth is OFF");
             return;
         }
@@ -168,14 +167,14 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
 
         // timeout if device is not found
         const timeout = setTimeout(() => {
-            console.log("TIMEOUT - Device not found");
+            // console.log("TIMEOUT - Device not found");
             manager.stopDeviceScan();
             setIsScanning(false);
             setError("Device not found");
         }, 10000);
 
         // start scan for device (StepSmart_Nano)
-        console.log("Starting scan for", DEVICE_NAME);
+        // console.log("Starting scan for", DEVICE_NAME);
         manager.startDeviceScan(null, null, (error, device) => {
             if (error) {
                 console.error("Scan error:", error.message);
@@ -188,7 +187,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
 
             // connect to StepSmart device
             if (device && device.name === DEVICE_NAME) {
-                console.log("FOUND StepSmart Nano:", device.id);
+                // console.log("FOUND StepSmart Nano:", device.id);
                 clearTimeout(timeout);
                 manager.stopDeviceScan();
                 setIsScanning(false);
@@ -201,7 +200,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
     
     // stop scan for ble device (not currently used)
     const stopScanning = () => {
-        console.log("Stopping scan");
+        // console.log("Stopping scan");
         manager.stopDeviceScan();
         setIsScanning(false);
     };
@@ -212,19 +211,18 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
 
         isDisconnecting.current = true;
         isManualDisconnect.current = true; // prevents unexpected disconnect error from showing
-        console.log("Disconnecting from device");
+        // console.log("Disconnecting from device");
 
         try {
-            // console.log("Cancelling native transaction...");
             await manager.cancelTransaction("monitoring_transaction");
             
             if (monitoringSubscription.current) {
-                console.log("Removing BLE listener...");
+                // console.log("Removing BLE listener...");
                 monitoringSubscription.current = null;
                 if (monitoringSubscription.current) {
                     try {
                         monitoringSubscription.current.remove();
-                        console.log("BLE listener removed")
+                        // console.log("BLE listener removed")
                     } catch (e) {
                         console.log("BLE listener remove failed (ignored):", e);
                     }
@@ -239,7 +237,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             if (locationRef.current) {
                 try {
                     locationRef.current.remove();
-                    console.log("location watcher removed");
+                    // console.log("location watcher removed");
                 } catch (e) {
                     console.log("GPS remove failed (ignored):", e);
                 }
@@ -250,7 +248,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             }
 
             if (disconnectSub) { // stop disconnect listener
-                console.log("removing disconnect listener");
+                // console.log("removing disconnect listener");
                 try {
                     disconnectSub();
                 } catch (e) {
@@ -258,7 +256,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
                 }
                 // disconnectSub(); 
                 setDisconnectSub(null);
-                console.log("disconnect listener removed");
+                // console.log("disconnect listener removed");
             }
             // disconnectSub?.(); // stop disconnect listener
             // setDisconnectSub(null);
@@ -267,35 +265,21 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             isPausedRef.current = true;
             let finalTotalPausedTime = totalPausedTime;
             if (isPaused && pauseStart && startTime) {
-                console.log("Resuming paused session before disconnect...!");
                 const now = Date.now();
                 finalTotalPausedTime += (now - pauseStart);
-                console.log("final total puased time calculated");
                 const elapsed = now - startTime - finalTotalPausedTime;
                 const totalSeconds = Math.floor(elapsed / 1000);
                 const hrs = Math.floor(totalSeconds / 3600);
                 const mins = Math.floor((totalSeconds % 3600) / 60);
                 const secs = totalSeconds % 60;
                 currentTimerRef.current = [hrs, mins, secs].map(v => v < 10 ? "0" + v : v).join(":");
-                console.log("adjusting timer finished!!");
             }
-
-            // try {
-            //     console.log("Cancelling BLE connection (fire-and-forget)");
-
-            //     await connectedDevice?.cancelConnection?.().catch(e => {
-            //         console.log("BLE cancelConnection error (ignored):", e);
-            //     });
-            // } catch (e) {
-            //     console.log("BLE cancelConnection crashed (ignored):", e);
-            // }
 
             await connectedDevice?.cancelConnection?.()
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
             await handleEndSessionProcessing(); // compute pressure and metrics post session
-            console.log("end session processing finished");
           
             // reset states
             safeSetConnectedDevice(null);
@@ -309,21 +293,18 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             setStartTime(null);
             setTotalPausedTime(0);
 
-            console.log("state reset complete safely");
-
-            console.log("Disconnected");
+            // console.log("Disconnected");
         } catch (e: any) {
             console.error("Disconnect error:", e.message);
         } finally {
             isManualDisconnect.current = false;
             isDisconnecting.current = false;
-            console.log("disconnect() EXIT");
         }
     };
 
     // post session processing
     const handleEndSessionProcessing = async () => {
-        console.log("handleEndSessionProcessing() ENTER", Date.now());
+        // console.log("handleEndSessionProcessing() ENTER", Date.now());
 
         // clear leftover data to files
         if (pressureBuffer.current.length > 0) {
@@ -338,10 +319,8 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             // calculation averages from file
             //const pressureAvgs = await computePressureAverages();
             const pressureAvgs = await computePressureAverages().catch(e => [0,0,0]);
-            console.log("Pressure step done");
             //const metricAvgs = await computeSessionAverages();
             const metricAvgs = await computeSessionAverages().catch(e => null);
-            console.log("Metrics step done");
 
             // final summary object
             const sessionSummary = {
@@ -357,12 +336,12 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
                 strideLength: metricAvgs?.stride || 0,
                 pressure: pressureAvgs || [1023, 1023, 1023]
             };
-            console.log("FINAL METRICS:", metricAvgs);
+            // console.log("FINAL METRICS:", metricAvgs);
             await saveSessionToHistory(sessionSummary); // save to async storage/database
             if (connectedDevice) {
 
             }
-            console.log("handleEndSessionProcessing() EXIT", Date.now());
+            // console.log("handleEndSessionProcessing() EXIT", Date.now());
         } catch (error) {
             console.error("handleEndSessionProcessing() Error:", error);
         }
@@ -384,14 +363,14 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
 
     // connect
     const connectToDevice = async (device: Device) => {
-        console.log("Connecting to:", device.name, device.id);
+        // console.log("Connecting to:", device.name, device.id);
         try {
             // connect, discover services (required before subscribing)
             const connected = await device.connect(); // establish link
 
-            console.log("Connected! Discovering services...");
+            // console.log("Connected! Discovering services...");
             await connected.discoverAllServicesAndCharacteristics(); // map device capabilities
-            console.log("Services discovered!");
+            // console.log("Services discovered!");
 
             setTotalPausedTime(0);
             setPauseStart(null);
@@ -405,13 +384,16 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             // handle hardware-side disconnect (out of range or battery died)
             const sub = manager.onDeviceDisconnected(connected.id, (error, device) => {
                 if (isManualDisconnect.current) {
+                    console.log("Ignored expected disconnect for:", device?.id);
                     return;
                 }
-                console.log("Device disconnected unexpectedly");
+                monitoringSubscription.current = null;
                 handleEndSessionProcessing(); // compute pressure and metrics
+
                 setConnectedDevice(null);
                 setIsScanning(false);
                 setIsConnecting(false);
+                isDisconnecting.current = false;
                 isPausedRef.current = true;
                 setError("Device disconnected");
             });
@@ -419,7 +401,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             setDisconnectSub(() => sub.remove());
 
             setIsConnecting(false);
-            console.log("Connected!");
+            // console.log("Connected!");
 
             // clear files
             if (isNewSession.current) {
@@ -536,11 +518,9 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
     // compute pressure averages post session
     const computePressureAverages = async () => {
         try {
-            console.log("reading pressure file...")
             // read file, sum each sensor, compute mean
             const fileInfo = await FileSystem.getInfoAsync(pressure_file);
             if (!fileInfo.exists) return;
-            console.log("file exists");
 
             const content = await FileSystem.readAsStringAsync(pressure_file);
             const lines = content.trim().split("\n");
@@ -565,7 +545,7 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             // calculate mean for each sensor
             const avg = sums.map((s, i) => (counts[i] > 0 ? Math.round(s / counts[i]) : 1023));
 
-            console.log("Calculated Pressure Averages:", avg);
+            // console.log("Calculated Pressure Averages:", avg);
             if (setPressureAverages) setPressureAverages(avg);
             return avg;
 
@@ -578,29 +558,20 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
     // compute metrics post session
     const computeSessionAverages = async () => {
         try {
-            console.log("Reading metrics file...");
-
             const fileInfo = await FileSystem.getInfoAsync(metrics_file);
             if (!fileInfo.exists) {
                 console.log("Metrics file not found - returning defaults");
                 return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
             }
-            console.log("file exists");
-            //if (!fileInfo.exists) return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
-            //console.log("reached 2");
 
             const content = await FileSystem.readAsStringAsync(metrics_file);
-            console.log("completed read");
 
             if (!content || content.trim() === "") {
                 return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
             }
-            console.log("reached 2")
 
             const lines = content.trim().split("\n");
             const dataLines = lines.slice(1);
-            //if (lines.length === 0) return { cadence: 0, stride: 0, speed: 0, pace: 0, steps: 0, distance: 0 };
-            console.log("reached 3");
 
             let sums = { cadence: 0, stride: 0, speed: 0, pace: 0 };
             let count = 0;
@@ -648,7 +619,6 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
             // setStrideLength(results.stride);
             // setSpeed(results.stride);
             // setPace(results.speed);
-            console.log("reached results");
             return results;
             
         } catch (e) {
@@ -696,14 +666,11 @@ export default function BLEButton({ setPressureAverages, setStepCount, setCadenc
                     <Button
                         title="STOP RUN"
                         onPress={async () => {
-                            console.log("STOP RUN PRESSED")
                             try {
                                 await disconnect();
-                                console.log("disconnect() FINISHED");
                             } catch (e) {
                                 console.error("Fatal disconnect crash: ", e);
                             }
-                            console.log("STOP RUN HANDLER DONE")
                         }}
                         color="#FF9500"
                     />
