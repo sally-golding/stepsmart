@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
+index 8d86f73..fd6988d 100644
+--- a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
++++ b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
+@@ -53,7 +53,7 @@ public class SafePromise {
+ 
+   public void reject(Throwable reason) {
+     if (isFinished.compareAndSet(false, true)) {
+-      promise.reject(reason);
++      promise.reject(ErrorDefaults.CODE, reason);
+     }
+   }
+ }

@@ -1,27 +1,18 @@
 import { Stack } from "expo-router";
-import { Text, View } from "react-native";
+import { useEffect } from "react";
 
 export default function Layout() {
+  useEffect(() => {
+    console.log("ROOT LAYOUT MOUNTED", Date.now());
+
+    return () => {
+      console.log("ROOT LAYOUT UNMOUNTED", Date.now());
+    };
+  }, []);
   return (
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          title: "STEPSMART",
-          headerTitleAlign: "center",
-          headerStyle: { backgroundColor: "#1c1c1e", },
-          headerTintColor: "#fff",
-          headerTitle: () => (
-            <Text style={{ color: "#fff", fontSize: 20 }}>
-              <Text style={{ fontWeight: "bold" }}>Step</Text>
-              <Text style={{ fontWeight: "bold" }}>Smart</Text>
-            </Text>
-          ),
-        }}
-      />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(home)" />
     </Stack>
   );
 }
-
-
-
