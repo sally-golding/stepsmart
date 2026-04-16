@@ -14,7 +14,10 @@ export async function getHistoryFile() {
 // clear file with a new session
 export async function resetFile(path: string) {
     try {
-        await FileSystem.writeAsStringAsync(path, "", { encoding: "utf8" });
+        const header = path.includes("metrics") 
+            ? "cadence,stride,speed,pace,steps,distance\n" 
+            : "p1,p2,p3\n";
+        await FileSystem.writeAsStringAsync(path, header, { encoding: "utf8" });
     } catch (e) {
         console.log("File Reset Error:", e);
     }
@@ -23,13 +26,16 @@ export async function resetFile(path: string) {
 // add new sensor data (reads old content, adds new text, overwrites file)
 export async function appendFile(path: string, text: string) {
     try {
-        const fileInfo = await FileSystem.getInfoAsync(path);
+        //const fileInfo = await FileSystem.getInfoAsync(path);
         let current = "";
-        if (fileInfo.exists) {
-        current = await FileSystem.readAsStringAsync(path);
-    }
-
-    await FileSystem.writeAsStringAsync(path, current + text, { encoding: "utf8" }); // old + new data
+        try {
+            current = await FileSystem.readAsStringAsync(path);
+        } catch {
+            current = "";
+        }
+        // if (fileInfo.exists) {
+        // current = await FileSystem.readAsStringAsync(path);
+        await FileSystem.writeAsStringAsync(path, current + text, { encoding: "utf8" }); 
 
     } catch (e) {
         console.log("File Write Error:", e);
@@ -38,6 +44,10 @@ export async function appendFile(path: string, text: string) {
 
 // save session into a json history file
 export async function saveSessionToHistory(sessionSummary: any) {
+    if (!sessionSummary) {
+        console.error("No session summary provided to saveSessionToHistory");
+        return;
+    }
     try {
         const history_file = await getHistoryFile();
         const fileInfo = await FileSystem.getInfoAsync(history_file);

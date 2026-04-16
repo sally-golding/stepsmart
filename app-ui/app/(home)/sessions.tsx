@@ -1,6 +1,6 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import Heatmap from "./heatmap";
+import Heatmap from "../../src/heatmap";
 
 // interface defining structure of saved session
 interface SessionData {

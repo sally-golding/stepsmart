@@ -1,7 +1,8 @@
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from "@react-navigation/drawer";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import * as SecureStore from "expo-secure-store";
+import { useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
 export default function Layout() {
@@ -14,6 +15,19 @@ export default function Layout() {
 
     router.replace("/");
   };
+
+  const pathname = usePathname();
+  useEffect(() => {
+    console.log("📍 PATH CHANGED:", pathname);
+  }, [pathname]);
+
+  useEffect(() => {
+    console.log("(home) LAYOUT MOUNTED");
+
+    return () => {
+      console.log("(home) LAYOUT UNMOUNTED");
+    };
+  }, []);
 
 
   return (
@@ -74,11 +88,6 @@ export default function Layout() {
       />
 
       <Drawer.Screen
-        name="ble"
-        options={{ drawerItemStyle: {display: "none"}}}
-      />
-
-      <Drawer.Screen
         name="heatmap"
         options={{ drawerItemStyle: {display: "none"}}}
       />
@@ -94,22 +103,22 @@ export default function Layout() {
       />
 
       <Drawer.Screen
-        name="ble/ble"
+        name="_ble/ble"
         options={{ drawerItemStyle: {display: "none"}}}
       />
 
       <Drawer.Screen
-        name="ble/types"
+        name="_ble/types"
         options={{ drawerItemStyle: {display: "none"}}}
       />
 
       <Drawer.Screen
-        name="ble/storage"
+        name="_ble/storage"
         options={{ drawerItemStyle: {display: "none"}}}
       />
 
       <Drawer.Screen
-        name="ble/permissions"
+        name="_ble/permissions"
         options={{ drawerItemStyle: {display: "none"}}}
       />
 

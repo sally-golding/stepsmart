@@ -1,10 +1,19 @@
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import BLEButton from "./ble/ble";
-import Heatmap from "./heatmap";
+import BLEButton from "../../src/ble/ble";
+import Heatmap from "../../src/heatmap";
 
 export default function Index() {
+
+  useEffect(() => {
+    console.log("HOME SCREEN MOUNTED");
+
+    return () => {
+      console.log("HOME SCREEN UNMOUNTED");
+    };
+  }, []);
+
   // user profile state
   const [userName, setUserName] = useState<string | null>(null);
   const [userWeight, setUserWeight]  = useState<number | null>(null);
