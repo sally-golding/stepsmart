@@ -8,6 +8,7 @@ Hardware
 - Arduino Nano 33 BLE Rev2 Microcontroller
 - Three Resistive-Based Force Pressure Sensors
 - Rechargeable 4.8 V NiMH battery
+- Custom PCB
 - Status Indicator LED
 - 3D-Printed Enclosure (Houses PCB, Microcontroller, Battery, LED)
 
