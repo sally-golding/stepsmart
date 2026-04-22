@@ -2,19 +2,20 @@ stepsmart
 
 StepSmart is a wearable smart insole designed to improve the safety and performance of runners. 
 The system is built with an Arduino Nano 33 BLE Rev 2 and a React Native Expo mobile application. 
-It captures active acceleration, gyroscope, and plantar pressure data and transmits data streams via Bluetooth Low Energy (BLE) for visualization on mobile devices.
+It captures active plantar pressure data and transmits data streams via Bluetooth Low Energy (BLE), coupled with GPS data, for visualization on mobile devices.
 
 Hardware 
-- Arduino Nano 33 BLE Rev2
-- Force sensors
-- Rechargeable Lithium 4.5V battery
-- Connectors
+- Arduino Nano 33 BLE Rev2 Microcontroller
+- Three Resistive-Based Force Pressure Sensors
+- Rechargeable 4.8 V NiMH battery
+- Status Indicator LED
+- 3D-Printed Enclosure (Houses PCB, Microcontroller, Battery, LED)
 
 Software 
 - Arduino IDE
 - React Native with Expo
 - Expo Go
-- Expo Development Build
+- Expo Release Build
 - C/C++
 - JavaScript/TypeScript
 
@@ -63,10 +64,23 @@ Release Candidate Outlined Work:
 - Refactored code and expanded documentation
 - Made app standalone
 
+Production Release Outlined Work:
+- Re-designed 3D-Printed Enclosure (More Compact, Rounded-Edges for Safety)
+- Refitted the insole with Liquid Electrical Tape for Waterproofing
+- Reworked File System Storage to be hierarchy based per user
+- Finalized Code Refactoring and Improved BLE Connection Stability
+- Fixed Bugs Introduced by Making App Standalone
+- Performed Additional Stress Testing
+
 Current Bugs and Limitations:
-- Automatic BLE reconnection is not supported
-- Application assumes valid BLE data is received; partial, delayed, or inaccurate data is not handled
 - Pressure data is limited to three sensor points
-- Pressure averages are calculated after disconnecting from device, preventing the user from viewing real-time updates
+- Pressure averages are calculated after disconnecting from device, preventing the user from viewing real-time pressure updates
 - Mobile application is supported on Android devices only
-- Post session information sometimes displays all zeros
+- Users who exceed 210 lbs. in weight may experienced reduced accuracy in the calculated metrics (Physical Weight Limitation of the Sensors)
+- GPS data becomes inaccurate and volatile indoors (Inherent limitation of GPS technology) and with poor internet connection
+
+Suggested Future Improvements:
+- Implement a dedicated GPS module (This will eliminate the need for a good internet connection, but the indoor inaccuracy will still be present)
+- Implement additional sensors (with absolute positioning) to fallback on for distance calculations during indoor conditions
+- Replace foam insole design with a more malleable surface
+- Refine provided feedback and metrics to be more actionable and personally applicable to each user by studying the patterns in their data (AI-learning could be beneficial)
