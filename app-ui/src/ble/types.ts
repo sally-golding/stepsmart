@@ -15,6 +15,4 @@ export interface BLEButtonProps {
  // device and uuids
 export const DEVICE_NAME = "StepSmart_Nano";
 export const SERVICE_UUID = "1385f9ca-f88f-4ebe-982f-0828bffb54ee";
-export const ACCEL_UUID = "1385f9cb-f88f-4ebe-982f-0828bffb54ee";
 export const PRESSURE_UUID = "1385f9cc-f88f-4ebe-982f-0828bffb54ee";
-export const GYRO_UUID = "1385f9cd-f88f-4ebe-982f-0828bffb54ee";
